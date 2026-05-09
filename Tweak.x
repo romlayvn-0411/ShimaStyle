@@ -276,7 +276,7 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
     CGFloat screenWidth = UIScreen.mainScreen.bounds.size.width;
     CGFloat yOffset = [DINPreferences sharedInstance].notificationYOffset;
     CGFloat w = MIN(width, screenWidth - 16.0);
-    CGFloat h = MAX(70.0, MIN(height, 160.0));
+    CGFloat h = MAX(44.0, MIN(height, 160.0));
     return CGRectMake((screenWidth - w) / 2.0, 11.0 + yOffset, w, h);
 }
 
@@ -317,7 +317,14 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
     self.containerView.backgroundColor = [UIColor clearColor]; // Đổi thành clear để xuyên thấu
     self.containerView.layer.cornerRadius = pill.size.height / 2.0;
     self.containerView.layer.cornerCurve = kCACornerCurveContinuous;
-    self.containerView.clipsToBounds = YES;
+    self.containerView.clipsToBounds = NO; // Tắt clip để bóng đổ (shadow) có thể tràn ra ngoài
+    
+    // Thêm hiệu ứng Shadow bồng bềnh
+    self.containerView.layer.shadowColor = [UIColor blackColor].CGColor;
+    self.containerView.layer.shadowOffset = CGSizeMake(0, 8);
+    self.containerView.layer.shadowRadius = 24.0;
+    self.containerView.layer.shadowOpacity = 0.4;
+    
     self.containerView.alpha = 0; // Hidden at pill size, avoid corner mismatch with real DI
     // Liquid Glass: Thinner, brighter border
     self.containerView.layer.borderWidth = 1.0;
@@ -391,6 +398,11 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
         self.bgView = blurView;
     }
 
+    // Kích hoạt cắt viền bo tròn trực tiếp trên bgView để thay thế cho containerView
+    self.bgView.clipsToBounds = YES;
+    self.bgView.layer.cornerCurve = kCACornerCurveContinuous;
+    self.bgView.layer.cornerRadius = self.containerView.layer.cornerRadius;
+
     [self.containerView insertSubview:self.bgView atIndex:0];
     [NSLayoutConstraint activateConstraints:@[
         [self.bgView.topAnchor constraintEqualToAnchor:self.containerView.topAnchor],
@@ -415,20 +427,20 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
     switch (style) {
         case 1: // Compact
             expandedWidth = 220.0;
-            expandedHeight = 64.0;
-            centerYOffset = 8.0;
+            expandedHeight = 56.0;
+            centerYOffset = 0.0;
             leadingPad = 12.0;
             break;
         case 2: // Minimal
             expandedWidth = 120.0;
-            expandedHeight = 96.0;
-            centerYOffset = 10.0;
+            expandedHeight = 80.0;
+            centerYOffset = 0.0;
             leadingPad = 12.0;
             break;
         default: // Standard
             expandedWidth = 320.0;
-            expandedHeight = 88.0;
-            centerYOffset = 14.0;
+            expandedHeight = 72.0;
+            centerYOffset = 0.0;
             leadingPad = 16.0;
             break;
     }
@@ -444,6 +456,7 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
         CGRect pill = [self pillFrame];
         self.containerView.frame = pill;
         self.containerView.layer.cornerRadius = pill.size.height / 2.0;
+        self.bgView.layer.cornerRadius = pill.size.height / 2.0;
         self.containerView.alpha = 0;
     }
 
@@ -466,6 +479,7 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
         self.containerView.alpha = 1.0;
         self.containerView.frame = expandedFrame;
         self.containerView.layer.cornerRadius = expandedRadius;
+        self.bgView.layer.cornerRadius = expandedRadius;
         self.notifView.alpha = 1.0;
         self.notifView.transform = CGAffineTransformIdentity;
     } completion:nil];
@@ -493,6 +507,7 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
                      animations:^{
         self.containerView.frame = pill;
         self.containerView.layer.cornerRadius = pillRadius;
+        self.bgView.layer.cornerRadius = pillRadius;
         self.notifView.transform = CGAffineTransformMakeScale(0.7, 0.7);
         self.notifView.alpha = 0;
         self.bgView.alpha = 0;
