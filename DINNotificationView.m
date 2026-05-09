@@ -23,7 +23,7 @@
     return self;
 }
 
-#pragma mark - Standard: [Icon 48] Title + Message
+#pragma mark - Standard: [Icon 40] Title + Message
 
 - (void)buildStandardWithTitle:(NSString *)title
                        message:(NSString *)message
@@ -31,13 +31,13 @@
                           icon:(UIImage *)icon {
     _iconImageView = [[UIImageView alloc] init];
     _iconImageView.contentMode = UIViewContentModeScaleAspectFill;
-    _iconImageView.layer.cornerRadius = 13;
+    _iconImageView.layer.cornerRadius = 10;
     _iconImageView.clipsToBounds = YES;
     _iconImageView.image = icon;
     _iconImageView.translatesAutoresizingMaskIntoConstraints = NO;
 
     _titleLabel = [[UILabel alloc] init];
-    _titleLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightSemibold];
+    _titleLabel.font = [UIFont systemFontOfSize:15 weight:UIFontWeightSemibold];
     _titleLabel.textColor = [UIColor whiteColor];
     _titleLabel.numberOfLines = 1;
     _titleLabel.lineBreakMode = NSLineBreakByTruncatingTail;
@@ -46,7 +46,7 @@
     _titleLabel.text = displayTitle ?: @"Notification";
 
     _messageLabel = [[UILabel alloc] init];
-    _messageLabel.font = [UIFont systemFontOfSize:14];
+    _messageLabel.font = [UIFont systemFontOfSize:13];
     _messageLabel.textColor = [UIColor colorWithWhite:1.0 alpha:0.55];
     _messageLabel.numberOfLines = 1;
     _messageLabel.lineBreakMode = NSLineBreakByTruncatingTail;
@@ -63,24 +63,31 @@
 
     // AirDrop-style layout: icon centered, title bottom near icon centerY, message below
     [NSLayoutConstraint activateConstraints:@[
-        // Icon: 56x56, vertically centered
-        [_iconImageView.widthAnchor constraintEqualToConstant:56],
-        [_iconImageView.heightAnchor constraintEqualToConstant:56],
+        // Icon: 40x40, vertically centered
+        [_iconImageView.widthAnchor constraintEqualToConstant:40],
+        [_iconImageView.heightAnchor constraintEqualToConstant:40],
         [_iconImageView.leadingAnchor constraintEqualToAnchor:self.leadingAnchor],
         [_iconImageView.centerYAnchor constraintEqualToAnchor:self.centerYAnchor],
 
         // Title: leading to icon
-        [_titleLabel.leadingAnchor constraintEqualToAnchor:_iconImageView.trailingAnchor constant:12],
+        [_titleLabel.leadingAnchor constraintEqualToAnchor:_iconImageView.trailingAnchor constant:10],
         [_titleLabel.trailingAnchor constraintLessThanOrEqualToAnchor:self.trailingAnchor],
 
-        // Message: bottom aligns with icon bottom
-        [_messageLabel.bottomAnchor constraintEqualToAnchor:_iconImageView.bottomAnchor],
         [_messageLabel.leadingAnchor constraintEqualToAnchor:_titleLabel.leadingAnchor],
         [_messageLabel.trailingAnchor constraintLessThanOrEqualToAnchor:self.trailingAnchor],
-
-        // Title: just above message
-        [_titleLabel.bottomAnchor constraintEqualToAnchor:_messageLabel.topAnchor constant:0],
     ]];
+
+    // Fix layout issue when message is empty
+    if (message.length > 0) {
+        [NSLayoutConstraint activateConstraints:@[
+            [_messageLabel.bottomAnchor constraintEqualToAnchor:_iconImageView.bottomAnchor],
+            [_titleLabel.bottomAnchor constraintEqualToAnchor:_messageLabel.topAnchor constant:0],
+        ]];
+    } else {
+        [NSLayoutConstraint activateConstraints:@[
+            [_titleLabel.centerYAnchor constraintEqualToAnchor:_iconImageView.centerYAnchor],
+        ]];
+    }
 }
 
 #pragma mark - Compact: [Icon 32] Title only

@@ -11,7 +11,7 @@
             <key>label</key>
             <string>ShimaStyle</string>
             <key>footerText</key>
-            <string>Force all app notifications through the Dynamic Island.</string>
+            <string>Bắt buộc tất cả thông báo ứng dụng hiển thị qua Dynamic Island.</string>
         </dict>
 
         <!-- Enable Toggle -->
@@ -25,7 +25,7 @@
             <key>key</key>
             <string>enabled</string>
             <key>label</key>
-            <string>Enable Tweak</string>
+            <string>Bật Tweak</string>
         </dict>
 
         <!-- Notification Section -->
@@ -33,9 +33,9 @@
             <key>cell</key>
             <string>PSGroupCell</string>
             <key>label</key>
-            <string>Notifications</string>
+            <string>Thông báo</string>
             <key>footerText</key>
-            <string>When enabled, notifications are displayed through the Dynamic Island and the default notification banner is suppressed.</string>
+            <string>Khi được bật, các thông báo sẽ được hiển thị qua Dynamic Island và biểu ngữ thông báo mặc định sẽ bị ẩn.</string>
         </dict>
 
         <dict>
@@ -48,7 +48,7 @@
             <key>key</key>
             <string>notificationEnabled</string>
             <key>label</key>
-            <string>Dynamic Island Notifications</string>
+            <string>Thông báo Dynamic Island</string>
             <key>PostNotification</key>
             <string>com.34306.shimastyle/prefsChanged</string>
         </dict>
@@ -70,9 +70,9 @@
             </array>
             <key>validTitles</key>
             <array>
-                <string>Standard</string>
-                <string>Compact</string>
-                <string>Minimal</string>
+                <string>Tiêu chuẩn</string>
+                <string>Nhỏ gọn</string>
+                <string>Tối giản</string>
             </array>
             <key>PostNotification</key>
             <string>com.34306.shimastyle/prefsChanged</string>
@@ -88,7 +88,7 @@
             <key>key</key>
             <string>dismissDuration</string>
             <key>label</key>
-            <string>Dismiss After (seconds)</string>
+            <string>Đóng sau (giây)</string>
             <key>min</key>
             <real>1.0</real>
             <key>max</key>
@@ -103,7 +103,7 @@
             <key>cell</key>
             <string>PSButtonCell</string>
             <key>label</key>
-            <string>Show Test Notification</string>
+            <string>Hiển thị thông báo thử nghiệm</string>
             <key>action</key>
             <string>testNotification</string>
         </dict>
@@ -113,9 +113,9 @@
             <key>cell</key>
             <string>PSGroupCell</string>
             <key>label</key>
-            <string>Custom Background</string>
+            <string>Hình nền tùy chỉnh</string>
             <key>footerText</key>
-            <string>Customize the Dynamic Island background. Use a hex color code (e.g. #FF5733) or provide a full path to a background image on device.</string>
+            <string>Tùy chỉnh hình nền Dynamic Island. Sử dụng mã màu hex (ví dụ: #FF5733) hoặc cung cấp đường dẫn đầy đủ đến hình ảnh nền trên thiết bị.</string>
         </dict>
 
         <dict>
@@ -128,7 +128,7 @@
             <key>key</key>
             <string>customBackgroundEnabled</string>
             <key>label</key>
-            <string>Enable Custom Background</string>
+            <string>Bật hình nền tùy chỉnh</string>
         </dict>
 
         <dict>
@@ -141,7 +141,7 @@
             <key>key</key>
             <string>customBackgroundColorHex</string>
             <key>label</key>
-            <string>Background Color (Hex)</string>
+            <string>Màu nền (Hex)</string>
         </dict>
 
         <dict>
@@ -152,7 +152,7 @@
             <key>key</key>
             <string>customBackgroundImagePath</string>
             <key>label</key>
-            <string>Background Image Path</string>
+            <string>Đường dẫn hình nền</string>
             <key>placeholder</key>
             <string>/var/jb/Library/DINBackground.png</string>
         </dict>
@@ -167,7 +167,7 @@
             <key>key</key>
             <string>backgroundOpacity</string>
             <key>label</key>
-            <string>Background Opacity</string>
+            <string>Độ mờ nền</string>
             <key>min</key>
             <real>0.0</real>
             <key>max</key>
@@ -181,14 +181,14 @@
             <key>cell</key>
             <string>PSGroupCell</string>
             <key>footerText</key>
-            <string>A respring is required for background changes to take effect.</string>
+            <string>Cần respring để các thay đổi về hình nền có hiệu lực.</string>
         </dict>
 
         <dict>
             <key>cell</key>
             <string>PSButtonCell</string>
             <key>label</key>
-            <string>Respring</string>
+            <string>Khởi động lại (Respring)</string>
             <key>action</key>
             <string>respring</string>
         </dict>
@@ -199,7 +199,7 @@
             <string>PSGroupCell</string>
             <key>footerText</key>
             <string>ShimaStyle v1.0.0
-Supports iOS 16 - 26.</string>
+Hỗ trợ iOS 16 - 26.</string>
         </dict>
     </array>
     <key>title</key>

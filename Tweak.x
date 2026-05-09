@@ -424,9 +424,9 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
             break;
         default: // Standard
             expandedWidth = 500.0; // Will be capped to screenWidth - 16
-            expandedHeight = 89.0;
-            centerYOffset = 3.0;
-            leadingPad = 18.0;
+            expandedHeight = 84.0;
+            centerYOffset = 14.0;
+            leadingPad = 16.0;
             break;
     }
 
