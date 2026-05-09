@@ -113,6 +113,19 @@ static BOOL dinIsDeviceLockedOrInCoverSheet(void) {
     return isLocked;
 }
 
+// --- Helper: Kiểm tra Khóa Xoay Màn Hình ---
+static BOOL dinIsOrientationLocked(void) {
+    BOOL isLocked = NO;
+    Class SBOrientationLockManagerClass = objc_lookUpClass("SBOrientationLockManager");
+    if (SBOrientationLockManagerClass) {
+        id lockManager = ((id (*)(Class, SEL))objc_msgSend)(SBOrientationLockManagerClass, sel_registerName("sharedInstance"));
+        if (lockManager && [lockManager respondsToSelector:sel_registerName("isLocked")]) {
+            isLocked = ((BOOL (*)(id, SEL))objc_msgSend)(lockManager, sel_registerName("isLocked"));
+        }
+    }
+    return isLocked;
+}
+
 // ============================================================================
 // MARK: - App Icon Helper
 // ============================================================================
@@ -306,7 +319,7 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
 
 @implementation DINPassthroughViewController
 - (void)loadView {
-    self.view = [[DINPassthroughView alloc] initWithFrame:UIScreen.mainScreen.bounds];
+    self.view = [[DINPassthroughView alloc] init];
     self.view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     self.view.backgroundColor = [UIColor clearColor];
 }
@@ -314,7 +327,28 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
     return YES;
 }
 - (UIInterfaceOrientationMask)supportedInterfaceOrientations {
-    return UIInterfaceOrientationMaskAll; // Cho phép xoay mọi hướng
+    // Nếu bị Khóa Xoay, ép Tweak chỉ hỗ trợ hướng hiện tại của Game
+    if (dinIsOrientationLocked()) {
+        UIInterfaceOrientation orientation = UIInterfaceOrientationPortrait;
+        if (self.view.window.windowScene) {
+            orientation = self.view.window.windowScene.interfaceOrientation;
+        } else {
+            orientation = [UIApplication sharedApplication].activeInterfaceOrientation;
+        }
+        
+        switch (orientation) {
+            case UIInterfaceOrientationLandscapeLeft:
+                return UIInterfaceOrientationMaskLandscapeLeft;
+            case UIInterfaceOrientationLandscapeRight:
+                return UIInterfaceOrientationMaskLandscapeRight;
+            case UIInterfaceOrientationPortraitUpsideDown:
+                return UIInterfaceOrientationMaskPortraitUpsideDown;
+            default:
+                return UIInterfaceOrientationMaskPortrait;
+        }
+    }
+    // Nếu không Khóa Xoay, cứ xoay tự do theo thao tác người dùng
+    return UIInterfaceOrientationMaskAll;
 }
 - (void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
     [super viewWillTransitionToSize:size withTransitionCoordinator:coordinator];
@@ -334,8 +368,11 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
     if (hitView == self || hitView == self.rootViewController.view) return nil;
     return hitView;
 }
-- (BOOL)_shouldAutorotateToInterfaceOrientation {
-    return YES; // Bắt buộc Window của SpringBoard xoay theo hệ thống
+- (BOOL)_shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)orientation {
+    return YES;
+}
+- (BOOL)_shouldControlAutorotation {
+    return YES;
 }
 @end
 
@@ -496,6 +533,11 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
     self.notificationCount = 1;
     self.currentBundleIdentifier = bundleIdentifier;
     [self ensureWindow];
+
+    // Ép Window cập nhật hướng xoay ngay lập tức (nếu game vừa thay đổi hướng)
+    if (@available(iOS 16.0, *)) {
+        [self.window.rootViewController setNeedsUpdateOfSupportedInterfaceOrientations];
+    }
 
     [self.dismissTimer invalidate];
     self.dismissTimer = nil;
