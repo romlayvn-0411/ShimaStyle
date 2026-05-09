@@ -314,14 +314,14 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
     // Container view - starts as Dynamic Island pill shape, invisible
     CGRect pill = [self pillFrame];
     self.containerView = [[UIView alloc] initWithFrame:pill];
-    self.containerView.backgroundColor = [UIColor blackColor];
+    self.containerView.backgroundColor = [UIColor clearColor]; // Đổi thành clear để xuyên thấu
     self.containerView.layer.cornerRadius = pill.size.height / 2.0;
     self.containerView.layer.cornerCurve = kCACornerCurveContinuous;
     self.containerView.clipsToBounds = YES;
     self.containerView.alpha = 0; // Hidden at pill size, avoid corner mismatch with real DI
-    // Border directly on the container layer - matches shape perfectly
-    self.containerView.layer.borderWidth = 1.5;
-    self.containerView.layer.borderColor = [UIColor colorWithWhite:1.0 alpha:0.15].CGColor;
+    // Liquid Glass: Thinner, brighter border
+    self.containerView.layer.borderWidth = 1.0;
+    self.containerView.layer.borderColor = [UIColor colorWithWhite:1.0 alpha:0.25].CGColor;
     [self.window.rootViewController.view addSubview:self.containerView];
 
     // Gestures
@@ -361,43 +361,55 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
 
     DINPreferences *prefs = [DINPreferences sharedInstance];
 
-    // Custom background (image, video, or solid color)
-    if (prefs.customBackgroundEnabled) {
-        NSString *bgPath = prefs.customBackgroundImagePath;
+    // Liquid Glass Background Base
+    NSString *bgPath = prefs.customBackgroundEnabled ? prefs.customBackgroundImagePath : nil;
 
-        if (bgPath && dinIsVideoFile(bgPath)) {
-            self.bgView = dinCreateVideoBgView(bgPath, prefs.backgroundOpacity);
-        } else if (bgPath && [[NSFileManager defaultManager] fileExistsAtPath:bgPath]) {
-            self.bgView = [[UIView alloc] init];
-            self.bgView.translatesAutoresizingMaskIntoConstraints = NO;
-            UIImage *bgImage = [UIImage imageWithContentsOfFile:bgPath];
-            if (bgImage) {
-                UIImageView *iv = [[UIImageView alloc] initWithImage:bgImage];
-                iv.contentMode = UIViewContentModeScaleAspectFill;
-                iv.translatesAutoresizingMaskIntoConstraints = NO;
-                iv.alpha = prefs.backgroundOpacity;
-                [self.bgView addSubview:iv];
-                [NSLayoutConstraint activateConstraints:@[
-                    [iv.topAnchor constraintEqualToAnchor:self.bgView.topAnchor],
-                    [iv.leadingAnchor constraintEqualToAnchor:self.bgView.leadingAnchor],
-                    [iv.trailingAnchor constraintEqualToAnchor:self.bgView.trailingAnchor],
-                    [iv.bottomAnchor constraintEqualToAnchor:self.bgView.bottomAnchor],
-                ]];
-            }
-        } else {
-            self.bgView = [[UIView alloc] init];
-            self.bgView.translatesAutoresizingMaskIntoConstraints = NO;
-            self.bgView.backgroundColor = [prefs customBackgroundColor];
+    if (bgPath && dinIsVideoFile(bgPath)) {
+        self.bgView = dinCreateVideoBgView(bgPath, prefs.backgroundOpacity);
+    } else if (bgPath && [[NSFileManager defaultManager] fileExistsAtPath:bgPath]) {
+        self.bgView = [[UIView alloc] init];
+        self.bgView.translatesAutoresizingMaskIntoConstraints = NO;
+        UIImage *bgImage = [UIImage imageWithContentsOfFile:bgPath];
+        if (bgImage) {
+            UIImageView *iv = [[UIImageView alloc] initWithImage:bgImage];
+            iv.contentMode = UIViewContentModeScaleAspectFill;
+            iv.translatesAutoresizingMaskIntoConstraints = NO;
+            iv.alpha = prefs.backgroundOpacity;
+            [self.bgView addSubview:iv];
+            [NSLayoutConstraint activateConstraints:@[
+                [iv.topAnchor constraintEqualToAnchor:self.bgView.topAnchor],
+                [iv.leadingAnchor constraintEqualToAnchor:self.bgView.leadingAnchor],
+                [iv.trailingAnchor constraintEqualToAnchor:self.bgView.trailingAnchor],
+                [iv.bottomAnchor constraintEqualToAnchor:self.bgView.bottomAnchor],
+            ]];
         }
-
-        [self.containerView addSubview:self.bgView];
-        [NSLayoutConstraint activateConstraints:@[
-            [self.bgView.topAnchor constraintEqualToAnchor:self.containerView.topAnchor],
-            [self.bgView.leadingAnchor constraintEqualToAnchor:self.containerView.leadingAnchor],
-            [self.bgView.trailingAnchor constraintEqualToAnchor:self.containerView.trailingAnchor],
-            [self.bgView.bottomAnchor constraintEqualToAnchor:self.containerView.bottomAnchor],
-        ]];
+    } else {
+        // Apply Modern Liquid Glass Blur
+        UIBlurEffect *blur = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemThinMaterialDark];
+        UIVisualEffectView *blurView = [[UIVisualEffectView alloc] initWithEffect:blur];
+        blurView.translatesAutoresizingMaskIntoConstraints = NO;
+        
+        if (prefs.customBackgroundEnabled) {
+            UIView *colorTint = [[UIView alloc] init];
+            colorTint.backgroundColor = [prefs customBackgroundColor];
+            colorTint.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+            [blurView.contentView addSubview:colorTint];
+        } else {
+            UIView *colorTint = [[UIView alloc] init];
+            colorTint.backgroundColor = [UIColor colorWithWhite:0.1 alpha:0.3];
+            colorTint.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+            [blurView.contentView addSubview:colorTint];
+        }
+        self.bgView = blurView;
     }
+
+    [self.containerView insertSubview:self.bgView atIndex:0];
+    [NSLayoutConstraint activateConstraints:@[
+        [self.bgView.topAnchor constraintEqualToAnchor:self.containerView.topAnchor],
+        [self.bgView.leadingAnchor constraintEqualToAnchor:self.containerView.leadingAnchor],
+        [self.bgView.trailingAnchor constraintEqualToAnchor:self.containerView.trailingAnchor],
+        [self.bgView.bottomAnchor constraintEqualToAnchor:self.containerView.bottomAnchor],
+    ]];
 
     // Get notification style
     NSInteger style = prefs.notificationStyle;
@@ -415,27 +427,27 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
         case 1: // Compact
             expandedWidth = 300.0;
             expandedHeight = 88.0;
-            centerYOffset = 16.0;
-            leadingPad = 14.0;
+            centerYOffset = 18.5;
+            leadingPad = 16.0;
             break;
         case 2: // Minimal
             expandedWidth = 200.0;
             expandedHeight = 132.0;
-            centerYOffset = 15.0;
+            centerYOffset = 18.5;
             leadingPad = 16.0;
             break;
         default: // Standard
             expandedWidth = 500.0; // Will be capped to screenWidth - 16
             expandedHeight = 96.0;
-            centerYOffset = 16.0;
+            centerYOffset = 18.5;
             leadingPad = 16.0;
             break;
     }
 
     [NSLayoutConstraint activateConstraints:@[
         [self.notifView.centerYAnchor constraintEqualToAnchor:self.containerView.centerYAnchor constant:centerYOffset],
-        [self.notifView.leadingAnchor constraintEqualToAnchor:self.containerView.leadingAnchor constant:leadingPad],
-        [self.notifView.trailingAnchor constraintEqualToAnchor:self.containerView.trailingAnchor constant:-leadingPad],
+        [self.notifView.centerXAnchor constraintEqualToAnchor:self.containerView.centerXAnchor],
+        [self.notifView.widthAnchor constraintLessThanOrEqualToAnchor:self.containerView.widthAnchor constant:-(leadingPad * 2)],
     ]];
 
     // Start from pill shape
@@ -458,8 +470,8 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
     [haptic impactOccurred];
 
     // Spring expand animation
-    [UIView animateWithDuration:0.55 delay:0
-         usingSpringWithDamping:0.72 initialSpringVelocity:0.8
+    [UIView animateWithDuration:0.65 delay:0
+         usingSpringWithDamping:0.65 initialSpringVelocity:0.9
                         options:UIViewAnimationOptionAllowUserInteraction
                      animations:^{
         self.containerView.alpha = 1.0;
@@ -616,10 +628,14 @@ static void *kDINBorderLayerKey = &kDINBorderLayerKey;
                 ]];
             }
         } else {
-            customBg = [[UIView alloc] init];
-            customBg.translatesAutoresizingMaskIntoConstraints = NO;
-            customBg.clipsToBounds = YES;
-            customBg.backgroundColor = [prefs customBackgroundColor];
+            UIBlurEffect *blur = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemThinMaterialDark];
+            UIVisualEffectView *blurView = [[UIVisualEffectView alloc] initWithEffect:blur];
+            blurView.translatesAutoresizingMaskIntoConstraints = NO;
+            UIView *colorTint = [[UIView alloc] init];
+            colorTint.backgroundColor = [prefs customBackgroundColor];
+            colorTint.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+            [blurView.contentView addSubview:colorTint];
+            customBg = blurView;
         }
 
         [selfView insertSubview:customBg atIndex:0];

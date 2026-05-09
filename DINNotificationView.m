@@ -32,13 +32,14 @@
     _iconImageView = [[UIImageView alloc] init];
     _iconImageView.contentMode = UIViewContentModeScaleAspectFill;
     _iconImageView.layer.cornerRadius = 10;
+    _iconImageView.layer.cornerCurve = kCACornerCurveContinuous;
     _iconImageView.clipsToBounds = YES;
     _iconImageView.image = icon;
     _iconImageView.translatesAutoresizingMaskIntoConstraints = NO;
 
     _titleLabel = [[UILabel alloc] init];
     _titleLabel.font = [UIFont systemFontOfSize:15 weight:UIFontWeightSemibold];
-    _titleLabel.textColor = [UIColor whiteColor];
+    _titleLabel.textColor = [UIColor colorWithWhite:1.0 alpha:0.95];
     _titleLabel.numberOfLines = 1;
     _titleLabel.lineBreakMode = NSLineBreakByTruncatingTail;
     NSString *displayTitle = (title.length > 0) ? title : appName;
@@ -75,7 +76,7 @@
 
         // Text Stack: vertically centered alongside icon
         [textStack.leadingAnchor constraintEqualToAnchor:_iconImageView.trailingAnchor constant:10],
-        [textStack.trailingAnchor constraintLessThanOrEqualToAnchor:self.trailingAnchor],
+        [textStack.trailingAnchor constraintEqualToAnchor:self.trailingAnchor],
         [textStack.centerYAnchor constraintEqualToAnchor:_iconImageView.centerYAnchor],
     ]];
 }
@@ -88,13 +89,14 @@
     _iconImageView = [[UIImageView alloc] init];
     _iconImageView.contentMode = UIViewContentModeScaleAspectFill;
     _iconImageView.layer.cornerRadius = 8;
+    _iconImageView.layer.cornerCurve = kCACornerCurveContinuous;
     _iconImageView.clipsToBounds = YES;
     _iconImageView.image = icon;
     _iconImageView.translatesAutoresizingMaskIntoConstraints = NO;
 
     _titleLabel = [[UILabel alloc] init];
     _titleLabel.font = [UIFont systemFontOfSize:14 weight:UIFontWeightSemibold];
-    _titleLabel.textColor = [UIColor whiteColor];
+    _titleLabel.textColor = [UIColor colorWithWhite:1.0 alpha:0.95];
     _titleLabel.numberOfLines = 1;
     _titleLabel.lineBreakMode = NSLineBreakByTruncatingTail;
     NSString *displayTitle = (title.length > 0) ? title : appName;
@@ -125,6 +127,7 @@
     _iconImageView = [[UIImageView alloc] init];
     _iconImageView.contentMode = UIViewContentModeScaleAspectFill;
     _iconImageView.layer.cornerRadius = 14;
+    _iconImageView.layer.cornerCurve = kCACornerCurveContinuous;
     _iconImageView.clipsToBounds = YES;
     _iconImageView.image = icon;
     _iconImageView.translatesAutoresizingMaskIntoConstraints = NO;
@@ -147,9 +150,10 @@
 
         [_titleLabel.topAnchor constraintEqualToAnchor:_iconImageView.bottomAnchor constant:4],
         [_titleLabel.centerXAnchor constraintEqualToAnchor:self.centerXAnchor],
-        [_titleLabel.leadingAnchor constraintGreaterThanOrEqualToAnchor:self.leadingAnchor],
-        [_titleLabel.trailingAnchor constraintLessThanOrEqualToAnchor:self.trailingAnchor],
+        [_titleLabel.leadingAnchor constraintEqualToAnchor:self.leadingAnchor],
+        [_titleLabel.trailingAnchor constraintEqualToAnchor:self.trailingAnchor],
         [_titleLabel.bottomAnchor constraintEqualToAnchor:self.bottomAnchor],
+        [self.widthAnchor constraintGreaterThanOrEqualToConstant:56],
     ]];
 }
 

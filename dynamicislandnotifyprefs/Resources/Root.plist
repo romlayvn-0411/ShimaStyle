@@ -158,6 +158,8 @@
             <string>customBackgroundEnabled</string>
             <key>label</key>
             <string>Bật hình nền tùy chỉnh</string>
+            <key>PostNotification</key>
+            <string>com.34306.shimastyle/prefsChanged</string>
         </dict>
 
         <dict>
@@ -165,6 +167,12 @@
             <string>PSLinkCell</string>
             <key>cellClass</key>
             <string>PFSimpleLiteColorCell</string>
+            <key>defaults</key>
+            <string>com.34306.shimastyle</string>
+            <key>key</key>
+            <string>customBackgroundColorHex</string>
+            <key>default</key>
+            <string>#1C1C1E</string>
             <key>libcolorpicker</key>
             <dict>
                 <key>defaults</key>
@@ -193,6 +201,8 @@
             <string>Đường dẫn hình nền</string>
             <key>placeholder</key>
             <string>/var/jb/Library/DINBackground.png</string>
+            <key>PostNotification</key>
+            <string>com.34306.shimastyle/prefsChanged</string>
         </dict>
 
         <dict>
@@ -212,6 +222,8 @@
             <real>1.0</real>
             <key>showValue</key>
             <true/>
+            <key>PostNotification</key>
+            <string>com.34306.shimastyle/prefsChanged</string>
         </dict>
 
         <!-- Respring Button -->

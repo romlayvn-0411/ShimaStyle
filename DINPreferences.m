@@ -15,8 +15,18 @@ static NSString *const kPrefsDomain = @"com.34306.shimastyle";
 }
 
 - (void)reloadPreferences {
-    NSDictionary *prefs = [[NSDictionary alloc] initWithContentsOfFile:
-        @"/var/jb/var/mobile/Library/Preferences/com.34306.shimastyle.plist"];
+    // Bắt buộc đồng bộ (Force sync) với cfprefsd để không bị lấy dữ liệu cũ
+    CFPreferencesAppSynchronize((CFStringRef)kPrefsDomain);
+    
+    NSDictionary *prefs = nil;
+    CFArrayRef keyList = CFPreferencesCopyKeyList((CFStringRef)kPrefsDomain, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+    if (keyList) {
+        prefs = (NSDictionary *)CFBridgingRelease(CFPreferencesCopyMultiple(keyList, (CFStringRef)kPrefsDomain, kCFPreferencesCurrentUser, kCFPreferencesAnyHost));
+        CFRelease(keyList);
+    }
+    if (!prefs) {
+        prefs = [NSDictionary dictionaryWithContentsOfFile:@"/var/jb/var/mobile/Library/Preferences/com.34306.shimastyle.plist"];
+    }
 
     _enabled = prefs[@"enabled"] ? [prefs[@"enabled"] boolValue] : YES;
     _notificationEnabled = prefs[@"notificationEnabled"] ? [prefs[@"notificationEnabled"] boolValue] : YES;
