@@ -290,6 +290,18 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
     self.view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     self.view.backgroundColor = [UIColor clearColor];
 }
+- (BOOL)shouldAutorotate {
+    return YES;
+}
+- (UIInterfaceOrientationMask)supportedInterfaceOrientations {
+    return UIInterfaceOrientationMaskAll; // Cho phép xoay mọi hướng
+}
+- (void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
+    [super viewWillTransitionToSize:size withTransitionCoordinator:coordinator];
+    [coordinator animateAlongsideTransition:^(id<UIViewControllerTransitionCoordinatorContext> context) {
+        [[DINOverlayManager sharedInstance] updateLayoutForNewSize:size];
+    } completion:nil];
+}
 @end
 
 @interface DINPassthroughWindow : UIWindow
@@ -301,6 +313,9 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
     UIView *hitView = [super hitTest:point withEvent:event];
     if (hitView == self || hitView == self.rootViewController.view) return nil;
     return hitView;
+}
+- (BOOL)_shouldAutorotateToInterfaceOrientation {
+    return YES; // Bắt buộc Window của SpringBoard xoay theo hệ thống
 }
 @end
 
@@ -318,6 +333,7 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
 @property (nonatomic, assign) BOOL showing;
 @property (nonatomic, assign) NSInteger notificationCount;
 + (instancetype)sharedInstance;
+- (void)updateLayoutForNewSize:(CGSize)size;
 - (void)showWithTitle:(NSString *)title message:(NSString *)message
               appName:(NSString *)appName icon:(UIImage *)icon
      bundleIdentifier:(NSString *)bundleIdentifier;
@@ -335,17 +351,42 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
 }
 
 - (CGRect)pillFrame {
-    CGFloat screenWidth = UIScreen.mainScreen.bounds.size.width;
+    CGFloat screenWidth = self.window ? self.window.bounds.size.width : UIScreen.mainScreen.bounds.size.width;
     CGFloat yOffset = [DINPreferences sharedInstance].notificationYOffset;
     return CGRectMake((screenWidth - 126.0) / 2.0, 11.0 + yOffset, 126.0, 37.33);
 }
 
 - (CGRect)expandedFrameForWidth:(CGFloat)width height:(CGFloat)height {
-    CGFloat screenWidth = UIScreen.mainScreen.bounds.size.width;
+    CGFloat screenWidth = self.window ? self.window.bounds.size.width : UIScreen.mainScreen.bounds.size.width;
     CGFloat yOffset = [DINPreferences sharedInstance].notificationYOffset;
     CGFloat w = MIN(width, screenWidth - 16.0);
     CGFloat h = MAX(44.0, MIN(height, 160.0));
     return CGRectMake((screenWidth - w) / 2.0, 11.0 + yOffset, w, h);
+}
+
+- (void)updateLayoutForNewSize:(CGSize)size {
+    if (!self.showing) {
+        CGFloat yOffset = [DINPreferences sharedInstance].notificationYOffset;
+        self.containerView.frame = CGRectMake((size.width - 126.0) / 2.0, 11.0 + yOffset, 126.0, 37.33);
+        return;
+    }
+    
+    CGFloat expandedWidth, expandedHeight;
+    NSInteger style = [DINPreferences sharedInstance].notificationStyle;
+    switch (style) {
+        case 1: expandedWidth = 220.0; expandedHeight = 56.0; break;
+        case 2: expandedWidth = 120.0; expandedHeight = 80.0; break;
+        default: expandedWidth = 320.0; expandedHeight = 72.0; break;
+    }
+    
+    CGFloat yOffset = [DINPreferences sharedInstance].notificationYOffset;
+    CGFloat w = MIN(expandedWidth, size.width - 16.0);
+    CGFloat h = MAX(44.0, MIN(expandedHeight, 160.0));
+    CGRect expandedFrame = CGRectMake((size.width - w) / 2.0, 11.0 + yOffset, w, h);
+    
+    [UIView animateWithDuration:0.3 delay:0 options:UIViewAnimationOptionCurveEaseInOut animations:^{
+        self.containerView.frame = expandedFrame;
+    } completion:nil];
 }
 
 - (void)ensureWindow {
