@@ -51,6 +51,9 @@
 @interface NCNotificationBannerDestination : NSObject
 @end
 
+@interface SBNotificationBannerDestination : NSObject
+@end
+
 // ============================================================================
 // MARK: - Rate Limiting
 // ============================================================================
