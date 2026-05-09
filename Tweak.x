@@ -54,6 +54,15 @@
 @interface SBNotificationBannerDestination : NSObject
 @end
 
+@interface SBNCSystemApertureNotificationDestination : NSObject
+@end
+
+@interface SBSystemApertureNotificationDestination : NSObject
+@end
+
+@interface NCNotificationSystemApertureDestination : NSObject
+@end
+
 // ============================================================================
 // MARK: - Rate Limiting
 // ============================================================================
@@ -671,6 +680,62 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
         return NO; // Chặn Banner
     }
     return %orig;
+}
+%end
+
+// --- Chặn thông báo nguyên bản của Dynamic Island (System Aperture) ---
+
+%hook SBNCSystemApertureNotificationDestination
+- (BOOL)canReceiveNotificationRequest:(id)arg1 {
+    DINPreferences *prefs = [DINPreferences sharedInstance];
+    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) return NO;
+    return %orig;
+}
+- (void)postNotificationRequest:(id)arg1 {
+    DINPreferences *prefs = [DINPreferences sharedInstance];
+    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) return;
+    %orig;
+}
+- (void)modifyNotificationRequest:(id)arg1 {
+    DINPreferences *prefs = [DINPreferences sharedInstance];
+    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) return;
+    %orig;
+}
+%end
+
+%hook SBSystemApertureNotificationDestination
+- (BOOL)canReceiveNotificationRequest:(id)arg1 {
+    DINPreferences *prefs = [DINPreferences sharedInstance];
+    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) return NO;
+    return %orig;
+}
+- (void)postNotificationRequest:(id)arg1 {
+    DINPreferences *prefs = [DINPreferences sharedInstance];
+    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) return;
+    %orig;
+}
+- (void)modifyNotificationRequest:(id)arg1 {
+    DINPreferences *prefs = [DINPreferences sharedInstance];
+    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) return;
+    %orig;
+}
+%end
+
+%hook NCNotificationSystemApertureDestination
+- (BOOL)canReceiveNotificationRequest:(id)arg1 {
+    DINPreferences *prefs = [DINPreferences sharedInstance];
+    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) return NO;
+    return %orig;
+}
+- (void)postNotificationRequest:(id)arg1 {
+    DINPreferences *prefs = [DINPreferences sharedInstance];
+    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) return;
+    %orig;
+}
+- (void)modifyNotificationRequest:(id)arg1 {
+    DINPreferences *prefs = [DINPreferences sharedInstance];
+    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) return;
+    %orig;
 }
 %end
 
