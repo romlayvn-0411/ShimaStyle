@@ -326,9 +326,6 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
     self.containerView.layer.shadowOpacity = 0.4;
     
     self.containerView.alpha = 0; // Hidden at pill size, avoid corner mismatch with real DI
-    // Liquid Glass: Thinner, brighter border
-    self.containerView.layer.borderWidth = 1.0;
-    self.containerView.layer.borderColor = [[UIColor labelColor] colorWithAlphaComponent:0.1].CGColor;
     [self.window.rootViewController.view addSubview:self.containerView];
 
     // Gestures
@@ -395,6 +392,7 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
         UIBlurEffect *blur = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterial];
         UIVisualEffectView *blurView = [[UIVisualEffectView alloc] initWithEffect:blur];
         blurView.translatesAutoresizingMaskIntoConstraints = NO;
+        blurView.alpha = prefs.blurOpacity; // Áp dụng độ mờ riêng cho Blur
         self.bgView = blurView;
     }
 
@@ -628,6 +626,7 @@ static void *kDINBorderLayerKey = &kDINBorderLayerKey;
             UIBlurEffect *blur = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterial];
             UIVisualEffectView *blurView = [[UIVisualEffectView alloc] initWithEffect:blur];
             blurView.translatesAutoresizingMaskIntoConstraints = NO;
+            blurView.alpha = prefs.blurOpacity; // Áp dụng độ mờ riêng cho Blur
             customBg = blurView;
         }
 
@@ -640,17 +639,6 @@ static void *kDINBorderLayerKey = &kDINBorderLayerKey;
         ]];
 
         objc_setAssociatedObject(result, kDINCustomBgViewKey, customBg,
-            OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-    }
-
-    // Create border shape layer (will be updated in layoutSubviews)
-    if (prefs.enabled) {
-        CAShapeLayer *borderLayer = [CAShapeLayer layer];
-        borderLayer.fillColor = [UIColor clearColor].CGColor;
-        borderLayer.strokeColor = [[UIColor labelColor] colorWithAlphaComponent:0.1].CGColor;
-        borderLayer.lineWidth = 1.5;
-        [selfView.layer addSublayer:borderLayer];
-        objc_setAssociatedObject(result, kDINBorderLayerKey, borderLayer,
             OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     }
 
@@ -686,29 +674,6 @@ static void *kDINBorderLayerKey = &kDINBorderLayerKey;
                 [player play];
             }
         }
-    }
-
-    // Update border shape to match the actual DI shape
-    CAShapeLayer *borderLayer = objc_getAssociatedObject(self, kDINBorderLayerKey);
-    if (!borderLayer) return;
-
-    // Only show border when DI is expanded (not compact pill)
-    if (self.bounds.size.height < 50.0) {
-        borderLayer.hidden = YES;
-        return;
-    }
-    borderLayer.hidden = NO;
-    borderLayer.frame = self.bounds;
-
-    // If the view uses a mask layer, copy its path for the border
-    if (self.layer.mask && [self.layer.mask isKindOfClass:[CAShapeLayer class]]) {
-        borderLayer.path = ((CAShapeLayer *)self.layer.mask).path;
-    } else {
-        CGFloat radius = self.layer.cornerRadius;
-        if (radius <= 0) radius = self.bounds.size.height / 2.0;
-        UIBezierPath *path = [UIBezierPath bezierPathWithRoundedRect:self.bounds
-                                                        cornerRadius:radius];
-        borderLayer.path = path.CGPath;
     }
 }
 

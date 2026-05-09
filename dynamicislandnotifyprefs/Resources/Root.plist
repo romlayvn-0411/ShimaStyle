@@ -185,9 +185,30 @@
             <key>defaults</key>
             <string>com.34306.shimastyle</string>
             <key>key</key>
+            <string>blurOpacity</string>
+            <key>label</key>
+            <string>Độ mờ (Hiệu ứng kính/Blur)</string>
+            <key>min</key>
+            <real>0.0</real>
+            <key>max</key>
+            <real>1.0</real>
+            <key>showValue</key>
+            <true/>
+            <key>PostNotification</key>
+            <string>com.34306.shimastyle/prefsChanged</string>
+        </dict>
+
+        <dict>
+            <key>cell</key>
+            <string>PSSliderCell</string>
+            <key>default</key>
+            <real>1.0</real>
+            <key>defaults</key>
+            <string>com.34306.shimastyle</string>
+            <key>key</key>
             <string>backgroundOpacity</string>
             <key>label</key>
-            <string>Độ mờ nền</string>
+            <string>Độ mờ (Ảnh/Video nền)</string>
             <key>min</key>
             <real>0.0</real>
             <key>max</key>

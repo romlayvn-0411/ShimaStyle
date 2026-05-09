@@ -36,6 +36,7 @@ static NSString *const kPrefsDomain = @"com.34306.shimastyle";
     _customBackgroundImagePath = (bgPath.length > 0) ? bgPath : nil;
     
     _backgroundOpacity = prefs[@"backgroundOpacity"] ? [prefs[@"backgroundOpacity"] floatValue] : 1.0;
+    _blurOpacity = prefs[@"blurOpacity"] ? [prefs[@"blurOpacity"] floatValue] : 1.0;
     _dismissDuration = prefs[@"dismissDuration"] ? [prefs[@"dismissDuration"] doubleValue] : 5.0;
     _notificationYOffset = prefs[@"notificationYOffset"] ? [prefs[@"notificationYOffset"] floatValue] : 0.0;
     _notificationStyle = prefs[@"notificationStyle"] ? [prefs[@"notificationStyle"] integerValue] : 0;

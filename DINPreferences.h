@@ -8,6 +8,7 @@
 @property (nonatomic, assign) BOOL customBackgroundEnabled;
 @property (nonatomic, copy) NSString *customBackgroundImagePath;
 @property (nonatomic, assign) CGFloat backgroundOpacity;
+@property (nonatomic, assign) CGFloat blurOpacity;
 @property (nonatomic, assign) double dismissDuration;
 @property (nonatomic, assign) CGFloat notificationYOffset;
 @property (nonatomic, assign) NSInteger notificationStyle;
