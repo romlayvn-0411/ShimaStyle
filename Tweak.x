@@ -152,35 +152,61 @@ static UIImage *dinAppIcon(NSString *bundleIdentifier) {
         }
     } @catch (NSException *e) {}
 
-    // Method 2: SBIconController → SBIconModel
+    // Method 2: IconServices (Chuyên trị Ứng dụng Hệ thống trên iOS 14+)
     if (!foundIcon) {
         @try {
-        Class iconControllerClass = objc_lookUpClass("SBIconController");
-        if (iconControllerClass) {
-            id iconController = ((id (*)(Class, SEL))objc_msgSend)(
-                iconControllerClass, sel_registerName("sharedInstance"));
-            if (iconController) {
-                id model = ((id (*)(id, SEL))objc_msgSend)(
-                    iconController, sel_registerName("model"));
-                if (model) {
-                    id icon = ((id (*)(id, SEL, id))objc_msgSend)(model,
-                        sel_registerName("applicationIconForBundleIdentifier:"),
-                        bundleIdentifier);
-                    if (icon && [icon respondsToSelector:sel_registerName("getIconImage:")]) {
-                            foundIcon = ((id (*)(id, SEL, int))objc_msgSend)(
-                            icon, sel_registerName("getIconImage:"), 2);
-                    }
-                        else if (icon && [icon respondsToSelector:sel_registerName("generateIconImage:")]) {
-                            foundIcon = ((id (*)(id, SEL, int))objc_msgSend)(
-                            icon, sel_registerName("generateIconImage:"), 2);
+            Class isIconClass = objc_lookUpClass("ISIcon");
+            Class isImageDescriptorClass = objc_lookUpClass("ISImageDescriptor");
+            if (isIconClass && isImageDescriptorClass) {
+                id icon = ((id (*)(id, SEL, id))objc_msgSend)([isIconClass alloc], sel_registerName("initWithBundleIdentifier:"), bundleIdentifier);
+                if (icon) {
+                    id descriptor = ((id (*)(id, SEL, CGSize, CGFloat))objc_msgSend)([isImageDescriptorClass alloc], sel_registerName("initWithSize:scale:"), CGSizeMake(60, 60), UIScreen.mainScreen.scale);
+                    if (descriptor) {
+                        id isImage = ((id (*)(id, SEL, id))objc_msgSend)(icon, sel_registerName("imageForImageDescriptor:"), descriptor);
+                        if (isImage) {
+                            CGImageRef cgImage = (CGImageRef)((id (*)(id, SEL))objc_msgSend)(isImage, sel_registerName("CGImage"));
+                            if (cgImage) {
+                                foundIcon = [UIImage imageWithCGImage:cgImage scale:UIScreen.mainScreen.scale orientation:UIImageOrientationUp];
+                            }
+                        }
                     }
                 }
             }
-        }
         } @catch (NSException *e) {}
     }
 
-    // Method 3: Load from app bundle
+    // Method 3: SBIconController → SBIconModel (Chuẩn iOS 16+)
+    if (!foundIcon) {
+        @try {
+            Class iconControllerClass = objc_lookUpClass("SBIconController");
+            if (iconControllerClass) {
+                id iconController = ((id (*)(Class, SEL))objc_msgSend)(iconControllerClass, sel_registerName("sharedInstance"));
+                if (iconController) {
+                    id iconManager = nil;
+                    if ([iconController respondsToSelector:sel_registerName("iconManager")]) {
+                        iconManager = ((id (*)(id, SEL))objc_msgSend)(iconController, sel_registerName("iconManager"));
+                    }
+                    id model = nil;
+                    if (iconManager && [iconManager respondsToSelector:sel_registerName("iconModel")]) {
+                        model = ((id (*)(id, SEL))objc_msgSend)(iconManager, sel_registerName("iconModel"));
+                    } else if ([iconController respondsToSelector:sel_registerName("model")]) {
+                        model = ((id (*)(id, SEL))objc_msgSend)(iconController, sel_registerName("model"));
+                    }
+                    
+                    if (model) {
+                        id icon = ((id (*)(id, SEL, id))objc_msgSend)(model, sel_registerName("applicationIconForBundleIdentifier:"), bundleIdentifier);
+                        if (icon && [icon respondsToSelector:sel_registerName("getIconImage:")]) {
+                            foundIcon = ((id (*)(id, SEL, int))objc_msgSend)(icon, sel_registerName("getIconImage:"), 2);
+                        } else if (icon && [icon respondsToSelector:sel_registerName("generateIconImage:")]) {
+                            foundIcon = ((id (*)(id, SEL, int))objc_msgSend)(icon, sel_registerName("generateIconImage:"), 2);
+                        }
+                    }
+                }
+            }
+        } @catch (NSException *e) {}
+    }
+
+    // Method 4: Load from app bundle
     if (!foundIcon) {
         @try {
         LSApplicationProxy *proxy = [LSApplicationProxy applicationProxyForIdentifier:bundleIdentifier];

@@ -11,7 +11,7 @@
     if (self = [super initWithFrame:CGRectZero]) {
         switch (style) {
             case DINNotificationStyleCompact:
-                [self buildCompactWithTitle:title appName:appName icon:icon];
+                [self buildCompactWithTitle:title message:message appName:appName icon:icon];
                 break;
             case DINNotificationStyleMinimal:
                 [self buildMinimalWithAppName:appName icon:icon];
@@ -131,6 +131,7 @@
 #pragma mark - Compact: [Icon 32] Title only
 
 - (void)buildCompactWithTitle:(NSString *)title
+                      message:(NSString *)message
                       appName:(NSString *)appName
                          icon:(UIImage *)icon {
     _iconImageView = [[UIImageView alloc] init];
@@ -150,23 +151,54 @@
     _titleLabel.lineBreakMode = NSLineBreakByTruncatingTail;
     NSString *displayTitle = (title.length > 0) ? title : appName;
     _titleLabel.text = displayTitle ?: @"Notification";
+    _titleLabel.translatesAutoresizingMaskIntoConstraints = NO;
 
-    UIStackView *hStack = [[UIStackView alloc]
-        initWithArrangedSubviews:@[_iconImageView, _titleLabel]];
-    hStack.axis = UILayoutConstraintAxisHorizontal;
-    hStack.spacing = 6; // Đưa chữ gần icon hơn
-    hStack.alignment = UIStackViewAlignmentCenter;
-    hStack.translatesAutoresizingMaskIntoConstraints = NO;
+    _messageContainer = [[UIView alloc] init];
+    _messageContainer.clipsToBounds = YES;
+    _messageContainer.translatesAutoresizingMaskIntoConstraints = NO;
 
-    [self addSubview:hStack];
+    _messageLabel = [[UILabel alloc] init];
+    _messageLabel.font = [UIFont systemFontOfSize:12]; // Chữ nhỏ hơn tiêu chuẩn
+    _messageLabel.textColor = [UIColor secondaryLabelColor];
+    _messageLabel.numberOfLines = 1;
+    _messageLabel.lineBreakMode = NSLineBreakByClipping;
+    _messageLabel.translatesAutoresizingMaskIntoConstraints = NO;
+
+    [_messageContainer addSubview:_messageLabel];
+    [self addSubview:_iconImageView];
+    [self addSubview:_titleLabel];
+    [self addSubview:_messageContainer];
+
     [NSLayoutConstraint activateConstraints:@[
         [_iconImageView.widthAnchor constraintEqualToConstant:28],
         [_iconImageView.heightAnchor constraintEqualToConstant:28],
-        [hStack.topAnchor constraintEqualToAnchor:self.topAnchor],
-        [hStack.leadingAnchor constraintEqualToAnchor:self.leadingAnchor constant:8], // Đưa ra sát viền
-        [hStack.trailingAnchor constraintEqualToAnchor:self.trailingAnchor constant:-8],
-        [hStack.bottomAnchor constraintEqualToAnchor:self.bottomAnchor],
+        [_iconImageView.leadingAnchor constraintEqualToAnchor:self.leadingAnchor constant:8],
+        [_iconImageView.centerYAnchor constraintEqualToAnchor:self.centerYAnchor],
+
+        [_titleLabel.leadingAnchor constraintEqualToAnchor:_iconImageView.trailingAnchor constant:8],
+        [_titleLabel.trailingAnchor constraintEqualToAnchor:self.trailingAnchor constant:-8],
+        
+        [_messageContainer.leadingAnchor constraintEqualToAnchor:_iconImageView.trailingAnchor constant:8],
+        [_messageContainer.trailingAnchor constraintEqualToAnchor:self.trailingAnchor constant:-8],
+
+        [_messageLabel.leadingAnchor constraintEqualToAnchor:_messageContainer.leadingAnchor],
+        [_messageLabel.topAnchor constraintEqualToAnchor:_messageContainer.topAnchor],
+        [_messageLabel.bottomAnchor constraintEqualToAnchor:_messageContainer.bottomAnchor],
     ]];
+
+    if (message.length > 0) {
+        _messageLabel.text = message;
+        [NSLayoutConstraint activateConstraints:@[
+            [_titleLabel.bottomAnchor constraintEqualToAnchor:_iconImageView.centerYAnchor constant:0],
+            [_messageContainer.topAnchor constraintEqualToAnchor:_iconImageView.centerYAnchor constant:0],
+            [_messageContainer.heightAnchor constraintEqualToConstant:15]
+        ]];
+    } else {
+        _messageContainer.hidden = YES;
+        [NSLayoutConstraint activateConstraints:@[
+            [_titleLabel.centerYAnchor constraintEqualToAnchor:_iconImageView.centerYAnchor],
+        ]];
+    }
 }
 
 #pragma mark - Minimal: Large centered icon + app name
