@@ -7,6 +7,10 @@
 #import "DINNotificationView.h"
 #import "DINPreferences.h"
 
+@interface DINNotificationView (Stacking)
+- (void)updateTitle:(NSString *)title message:(NSString *)message appName:(NSString *)appName icon:(UIImage *)icon count:(NSInteger)count;
+@end
+
 // ============================================================================
 // MARK: - Private Class Interfaces
 // ============================================================================
@@ -312,6 +316,7 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
 @property (nonatomic, strong) NSTimer *dismissTimer;
 @property (nonatomic, copy) NSString *currentBundleIdentifier;
 @property (nonatomic, assign) BOOL showing;
+@property (nonatomic, assign) NSInteger notificationCount;
 + (instancetype)sharedInstance;
 - (void)showWithTitle:(NSString *)title message:(NSString *)message
               appName:(NSString *)appName icon:(UIImage *)icon
@@ -417,6 +422,35 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
 - (void)showWithTitle:(NSString *)title message:(NSString *)message
               appName:(NSString *)appName icon:(UIImage *)icon
      bundleIdentifier:(NSString *)bundleIdentifier {
+
+    // --- Feature: Notification Stacking (Gom nhóm thông báo) ---
+    if (self.showing) {
+        if ([self.currentBundleIdentifier isEqualToString:bundleIdentifier]) {
+            self.notificationCount++;
+        } else {
+            self.notificationCount = 1;
+            self.currentBundleIdentifier = bundleIdentifier;
+        }
+
+        // Hiệu ứng Cross-dissolve (mờ dần đổi nội dung) siêu mượt
+        [UIView transitionWithView:self.notifView
+                          duration:0.25
+                           options:UIViewAnimationOptionTransitionCrossDissolve
+                        animations:^{
+            if ([self.notifView respondsToSelector:@selector(updateTitle:message:appName:icon:count:)]) {
+                [self.notifView updateTitle:title message:message appName:appName icon:icon count:self.notificationCount];
+            }
+        } completion:nil];
+
+        // Khởi động lại thời gian hiển thị
+        [self.dismissTimer invalidate];
+        double duration = [DINPreferences sharedInstance].dismissDuration;
+        if (duration < 1.0) duration = 1.0;
+        self.dismissTimer = [NSTimer scheduledTimerWithTimeInterval:duration target:self selector:@selector(dismiss) userInfo:nil repeats:NO];
+        return;
+    }
+
+    self.notificationCount = 1;
     self.currentBundleIdentifier = bundleIdentifier;
     [self ensureWindow];
 

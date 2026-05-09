@@ -157,4 +157,28 @@
     ]];
 }
 
+#pragma mark - Stacking Updates
+
+- (void)updateTitle:(NSString *)title message:(NSString *)message appName:(NSString *)appName icon:(UIImage *)icon count:(NSInteger)count {
+    NSString *displayTitle = (title.length > 0) ? title : appName;
+    if (count > 1) {
+        displayTitle = [NSString stringWithFormat:@"(%ld) %@", (long)count, displayTitle ?: @""];
+    }
+    
+    if (_titleLabel) _titleLabel.text = displayTitle ?: @"Notification";
+    
+    if (_messageLabel) {
+        if (message.length > 0) {
+            _messageLabel.text = message;
+            _messageLabel.hidden = NO;
+        } else {
+            _messageLabel.hidden = YES;
+        }
+    }
+    
+    if (icon && _iconImageView) {
+        _iconImageView.image = icon;
+    }
+}
+
 @end
