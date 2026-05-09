@@ -553,9 +553,16 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
 
     // --- Fix: Trả lại thông báo gốc nếu màn hình đang khóa ---
     BOOL isLocked = NO;
-    id sb = [UIApplication sharedApplication];
-    if ([sb respondsToSelector:sel_registerName("isLocked")]) {
-        isLocked = ((BOOL (*)(id, SEL))objc_msgSend)(sb, sel_registerName("isLocked"));
+    Class SBLockScreenManagerClass = objc_lookUpClass("SBLockScreenManager");
+    if (SBLockScreenManagerClass) {
+        id lockScreenManager = ((id (*)(Class, SEL))objc_msgSend)(SBLockScreenManagerClass, sel_registerName("sharedInstance"));
+        if (lockScreenManager) {
+            if ([lockScreenManager respondsToSelector:sel_registerName("isLockScreenVisible")]) {
+                isLocked = ((BOOL (*)(id, SEL))objc_msgSend)(lockScreenManager, sel_registerName("isLockScreenVisible"));
+            } else if ([lockScreenManager respondsToSelector:sel_registerName("isUILocked")]) {
+                isLocked = ((BOOL (*)(id, SEL))objc_msgSend)(lockScreenManager, sel_registerName("isUILocked"));
+            }
+        }
     }
     if (isLocked) {
         %orig;
