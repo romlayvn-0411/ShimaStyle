@@ -541,14 +541,7 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
     [self ensureWindow];
 
     // Ép Window cập nhật hướng xoay ngay lập tức khớp với Game
-    if (@available(iOS 16.0, *)) {
-        [self.window.rootViewController setNeedsUpdateOfSupportedInterfaceOrientations];
-    } else {
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-        [UIViewController attemptRotationToDeviceOrientation];
-#pragma clang diagnostic pop
-    }
+    [self.window.rootViewController setNeedsUpdateOfSupportedInterfaceOrientations];
 
     [self.dismissTimer invalidate];
     self.dismissTimer = nil;
