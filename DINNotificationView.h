@@ -15,5 +15,6 @@ typedef NS_ENUM(NSInteger, DINNotificationStyle) {
                       message:(NSString *)message
                       appName:(NSString *)appName
                          icon:(UIImage *)icon
-                        style:(DINNotificationStyle)style;
+                        style:(DINNotificationStyle)style
+               textColorStyle:(NSInteger)textColorStyle;
 @end

@@ -11,7 +11,9 @@
 @property (nonatomic, assign) CGFloat blurOpacity;
 @property (nonatomic, assign) double dismissDuration;
 @property (nonatomic, assign) CGFloat notificationYOffset;
+@property (nonatomic, assign) double animationDuration;
 @property (nonatomic, assign) NSInteger notificationStyle;
+@property (nonatomic, assign) NSInteger textColorStyle;
 
 + (instancetype)sharedInstance;
 - (void)reloadPreferences;

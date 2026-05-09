@@ -521,9 +521,13 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
     [self ensureWindow];
 
     // Ép Window cập nhật hướng xoay ngay lập tức khớp với Game
-    [UIViewController attemptRotationToDeviceOrientation];
     if (@available(iOS 16.0, *)) {
         [self.window.rootViewController setNeedsUpdateOfSupportedInterfaceOrientations];
+    } else {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+        [UIViewController attemptRotationToDeviceOrientation];
+#pragma clang diagnostic pop
     }
 
     [self.dismissTimer invalidate];
@@ -580,10 +584,12 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
 
     // Get notification style
     NSInteger style = prefs.notificationStyle;
+    NSInteger textColorStyle = prefs.textColorStyle;
 
     self.notifView = [[DINNotificationView alloc] initWithTitle:title message:message
                                                         appName:appName icon:icon
-                                                          style:(DINNotificationStyle)style];
+                                                          style:(DINNotificationStyle)style
+                                                 textColorStyle:textColorStyle];
     self.notifView.translatesAutoresizingMaskIntoConstraints = NO;
     self.notifView.alpha = 0;
     self.notifView.transform = CGAffineTransformMakeScale(0.7, 0.7);
@@ -635,8 +641,9 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
 
     // Đã xóa hiệu ứng Haptic rung ở đây vì %orig sẽ tự động kích hoạt rung/chuông mặc định của iOS
 
+    double animDuration = [DINPreferences sharedInstance].animationDuration;
     // Spring expand animation - Tăng tốc độ bung mở để tạo cảm giác "Snappy"
-    [UIView animateWithDuration:0.45 delay:0
+    [UIView animateWithDuration:animDuration delay:0
          usingSpringWithDamping:0.75 initialSpringVelocity:1.0
                         options:UIViewAnimationOptionAllowUserInteraction
                      animations:^{
@@ -664,19 +671,29 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
     CGRect pill = [self pillFrame];
     CGFloat pillRadius = pill.size.height / 2.0;
 
-    // Hiệu ứng "hút" (Suck in) mượt mà và tự nhiên
-    [UIView animateWithDuration:0.45 delay:0
-         usingSpringWithDamping:0.75 initialSpringVelocity:0.8
-                        options:UIViewAnimationOptionCurveEaseInOut
-                     animations:^{
+    double animDuration = [DINPreferences sharedInstance].animationDuration;
+    double fadeOutTextDur = (animDuration / 0.45) * 0.15;
+    double shrinkDelay = (animDuration / 0.45) * 0.1;
+    double shrinkDur = (animDuration / 0.45) * 0.4;
+    double fadeOutBgDur = (animDuration / 0.45) * 0.2;
+
+    // 1. Làm mờ (Fade out) phần văn bản/nội dung cực nhanh trước
+    [UIView animateWithDuration:fadeOutTextDur delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^{
+        self.notifView.alpha = 0;
+        self.notifView.transform = CGAffineTransformMakeScale(0.8, 0.8);
+    } completion:nil];
+
+    // 2. Khung viền thu nhỏ lại thành viên thuốc (delay để chờ chữ mờ đi)
+    [UIView animateWithDuration:shrinkDur delay:shrinkDelay
+     usingSpringWithDamping:0.75 initialSpringVelocity:0.8
+                    options:UIViewAnimationOptionCurveEaseInOut
+                 animations:^{
         self.containerView.frame = pill;
         self.containerView.layer.cornerRadius = pillRadius;
         self.bgView.layer.cornerRadius = pillRadius;
-        self.notifView.transform = CGAffineTransformMakeScale(0.7, 0.7);
-        self.notifView.alpha = 0;
         self.bgView.alpha = 0;
     } completion:^(BOOL finished) {
-        [UIView animateWithDuration:0.2 animations:^{
+        [UIView animateWithDuration:fadeOutBgDur animations:^{
             self.containerView.alpha = 0;
         } completion:^(BOOL finished) {
             self.window.hidden = YES;

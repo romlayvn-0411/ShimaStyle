@@ -99,6 +99,35 @@
             <string>com.34306.shimastyle/prefsChanged</string>
         </dict>
 
+        <!-- Animation Speed Section -->
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>label</key>
+            <string>Tốc độ hoạt ảnh</string>
+            <key>footerText</key>
+            <string>Thời gian để thông báo bung mở và thu nhỏ (Mặc định: 0.45s).</string>
+        </dict>
+
+        <dict>
+            <key>cell</key>
+            <string>PSSliderCell</string>
+            <key>default</key>
+            <real>0.45</real>
+            <key>defaults</key>
+            <string>com.34306.shimastyle</string>
+            <key>key</key>
+            <string>animationDuration</string>
+            <key>min</key>
+            <real>0.1</real>
+            <key>max</key>
+            <real>2.0</real>
+            <key>showValue</key>
+            <true/>
+            <key>PostNotification</key>
+            <string>com.34306.shimastyle/prefsChanged</string>
+        </dict>
+
         <dict>
             <key>cell</key>
             <string>PSButtonCell</string>
@@ -225,6 +254,33 @@
             <real>1.0</real>
             <key>showValue</key>
             <true/>
+            <key>PostNotification</key>
+            <string>com.34306.shimastyle/prefsChanged</string>
+        </dict>
+
+        <!-- Text Color Section -->
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>label</key>
+            <string>Màu sắc văn bản</string>
+            <key>footerText</key>
+            <string>Điều chỉnh màu chữ để dễ đọc hơn khi sử dụng hình nền tùy chỉnh.</string>
+        </dict>
+
+        <dict>
+            <key>cell</key>
+            <string>PSSegmentCell</string>
+            <key>default</key>
+            <integer>0</integer>
+            <key>defaults</key>
+            <string>com.34306.shimastyle</string>
+            <key>key</key>
+            <string>textColorStyle</string>
+            <key>validValues</key>
+            <array> <integer>0</integer> <integer>1</integer> <integer>2</integer> </array>
+            <key>validTitles</key>
+            <array> <string>Tự động</string> <string>Sáng (Trắng)</string> <string>Tối (Đen)</string> </array>
             <key>PostNotification</key>
             <string>com.34306.shimastyle/prefsChanged</string>
         </dict>

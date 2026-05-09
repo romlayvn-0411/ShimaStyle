@@ -39,7 +39,9 @@ static NSString *const kPrefsDomain = @"com.34306.shimastyle";
     _blurOpacity = prefs[@"blurOpacity"] ? [prefs[@"blurOpacity"] floatValue] : 1.0;
     _dismissDuration = prefs[@"dismissDuration"] ? [prefs[@"dismissDuration"] doubleValue] : 5.0;
     _notificationYOffset = prefs[@"notificationYOffset"] ? [prefs[@"notificationYOffset"] floatValue] : 0.0;
+    _animationDuration = prefs[@"animationDuration"] ? [prefs[@"animationDuration"] doubleValue] : 0.45;
     _notificationStyle = prefs[@"notificationStyle"] ? [prefs[@"notificationStyle"] integerValue] : 0;
+    _textColorStyle = prefs[@"textColorStyle"] ? [prefs[@"textColorStyle"] integerValue] : 0;
 }
 
 @end

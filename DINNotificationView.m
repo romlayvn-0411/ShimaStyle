@@ -6,7 +6,8 @@
                       message:(NSString *)message
                       appName:(NSString *)appName
                          icon:(UIImage *)icon
-                        style:(DINNotificationStyle)style {
+                        style:(DINNotificationStyle)style
+               textColorStyle:(NSInteger)textColorStyle {
     if (self = [super initWithFrame:CGRectZero]) {
         switch (style) {
             case DINNotificationStyleCompact:
@@ -19,8 +20,28 @@
                 [self buildStandardWithTitle:title message:message appName:appName icon:icon];
                 break;
         }
+        [self applyTextColorStyle:textColorStyle];
     }
     return self;
+}
+
+- (void)applyTextColorStyle:(NSInteger)style {
+    UIColor *primaryColor;
+    UIColor *secondaryColor;
+    
+    if (style == 1) { // Light (White)
+        primaryColor = [UIColor whiteColor];
+        secondaryColor = [UIColor colorWithWhite:0.85 alpha:1.0];
+    } else if (style == 2) { // Dark (Black)
+        primaryColor = [UIColor blackColor];
+        secondaryColor = [UIColor colorWithWhite:0.25 alpha:1.0];
+    } else { // Auto
+        primaryColor = [UIColor labelColor];
+        secondaryColor = [UIColor secondaryLabelColor];
+    }
+    
+    if (_titleLabel) _titleLabel.textColor = primaryColor;
+    if (_messageLabel) _messageLabel.textColor = secondaryColor;
 }
 
 #pragma mark - Standard: [Icon 40] Title + Message
