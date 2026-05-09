@@ -321,7 +321,7 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
     self.containerView.alpha = 0; // Hidden at pill size, avoid corner mismatch with real DI
     // Liquid Glass: Thinner, brighter border
     self.containerView.layer.borderWidth = 1.0;
-    self.containerView.layer.borderColor = [UIColor colorWithWhite:1.0 alpha:0.25].CGColor;
+    self.containerView.layer.borderColor = [[UIColor labelColor] colorWithAlphaComponent:0.1].CGColor;
     [self.window.rootViewController.view addSubview:self.containerView];
 
     // Gestures
@@ -384,22 +384,10 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
             ]];
         }
     } else {
-        // Apply Modern Liquid Glass Blur
-        UIBlurEffect *blur = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemThinMaterialDark];
+        // Tự động sử dụng Blur theo giao diện Sáng/Tối của hệ thống
+        UIBlurEffect *blur = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterial];
         UIVisualEffectView *blurView = [[UIVisualEffectView alloc] initWithEffect:blur];
         blurView.translatesAutoresizingMaskIntoConstraints = NO;
-        
-        if (prefs.customBackgroundEnabled) {
-            UIView *colorTint = [[UIView alloc] init];
-            colorTint.backgroundColor = [prefs customBackgroundColor];
-            colorTint.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-            [blurView.contentView addSubview:colorTint];
-        } else {
-            UIView *colorTint = [[UIView alloc] init];
-            colorTint.backgroundColor = [UIColor colorWithWhite:0.1 alpha:0.3];
-            colorTint.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-            [blurView.contentView addSubview:colorTint];
-        }
         self.bgView = blurView;
     }
 
@@ -425,21 +413,21 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
     CGFloat expandedWidth, expandedHeight, centerYOffset, leadingPad;
     switch (style) {
         case 1: // Compact
-            expandedWidth = 300.0;
-            expandedHeight = 88.0;
-            centerYOffset = 18.5;
-            leadingPad = 16.0;
+            expandedWidth = 260.0;
+            expandedHeight = 76.0;
+            centerYOffset = 10.0;
+            leadingPad = 14.0;
             break;
         case 2: // Minimal
-            expandedWidth = 200.0;
-            expandedHeight = 132.0;
-            centerYOffset = 18.5;
+            expandedWidth = 160.0;
+            expandedHeight = 116.0;
+            centerYOffset = 14.0;
             leadingPad = 16.0;
             break;
         default: // Standard
-            expandedWidth = 500.0; // Will be capped to screenWidth - 16
-            expandedHeight = 96.0;
-            centerYOffset = 18.5;
+            expandedWidth = 350.0;
+            expandedHeight = 88.0;
+            centerYOffset = 14.0;
             leadingPad = 16.0;
             break;
     }
@@ -628,13 +616,9 @@ static void *kDINBorderLayerKey = &kDINBorderLayerKey;
                 ]];
             }
         } else {
-            UIBlurEffect *blur = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemThinMaterialDark];
+            UIBlurEffect *blur = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterial];
             UIVisualEffectView *blurView = [[UIVisualEffectView alloc] initWithEffect:blur];
             blurView.translatesAutoresizingMaskIntoConstraints = NO;
-            UIView *colorTint = [[UIView alloc] init];
-            colorTint.backgroundColor = [prefs customBackgroundColor];
-            colorTint.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-            [blurView.contentView addSubview:colorTint];
             customBg = blurView;
         }
 
@@ -654,7 +638,7 @@ static void *kDINBorderLayerKey = &kDINBorderLayerKey;
     if (prefs.enabled) {
         CAShapeLayer *borderLayer = [CAShapeLayer layer];
         borderLayer.fillColor = [UIColor clearColor].CGColor;
-        borderLayer.strokeColor = [UIColor colorWithWhite:1.0 alpha:0.15].CGColor;
+        borderLayer.strokeColor = [[UIColor labelColor] colorWithAlphaComponent:0.1].CGColor;
         borderLayer.lineWidth = 1.5;
         [selfView.layer addSublayer:borderLayer];
         objc_setAssociatedObject(result, kDINBorderLayerKey, borderLayer,

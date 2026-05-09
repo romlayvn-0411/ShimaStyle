@@ -39,7 +39,7 @@
 
     _titleLabel = [[UILabel alloc] init];
     _titleLabel.font = [UIFont systemFontOfSize:15 weight:UIFontWeightSemibold];
-    _titleLabel.textColor = [UIColor colorWithWhite:1.0 alpha:0.95];
+    _titleLabel.textColor = [UIColor labelColor];
     _titleLabel.numberOfLines = 1;
     _titleLabel.lineBreakMode = NSLineBreakByTruncatingTail;
     NSString *displayTitle = (title.length > 0) ? title : appName;
@@ -47,7 +47,7 @@
 
     _messageLabel = [[UILabel alloc] init];
     _messageLabel.font = [UIFont systemFontOfSize:13];
-    _messageLabel.textColor = [UIColor colorWithWhite:1.0 alpha:0.55];
+    _messageLabel.textColor = [UIColor secondaryLabelColor];
     _messageLabel.numberOfLines = 1;
     _messageLabel.lineBreakMode = NSLineBreakByTruncatingTail;
     if (message.length > 0) {
@@ -96,7 +96,7 @@
 
     _titleLabel = [[UILabel alloc] init];
     _titleLabel.font = [UIFont systemFontOfSize:14 weight:UIFontWeightSemibold];
-    _titleLabel.textColor = [UIColor colorWithWhite:1.0 alpha:0.95];
+    _titleLabel.textColor = [UIColor labelColor];
     _titleLabel.numberOfLines = 1;
     _titleLabel.lineBreakMode = NSLineBreakByTruncatingTail;
     NSString *displayTitle = (title.length > 0) ? title : appName;
@@ -134,7 +134,7 @@
 
     _titleLabel = [[UILabel alloc] init];
     _titleLabel.font = [UIFont systemFontOfSize:11 weight:UIFontWeightMedium];
-    _titleLabel.textColor = [UIColor colorWithWhite:1.0 alpha:0.7];
+    _titleLabel.textColor = [UIColor secondaryLabelColor];
     _titleLabel.textAlignment = NSTextAlignmentCenter;
     _titleLabel.numberOfLines = 1;
     _titleLabel.text = appName ?: @"App";

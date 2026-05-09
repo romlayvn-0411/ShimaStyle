@@ -144,7 +144,7 @@
             <key>label</key>
             <string>Hình nền tùy chỉnh</string>
             <key>footerText</key>
-            <string>Tùy chỉnh hình nền Dynamic Island. Sử dụng mã màu hex (ví dụ: #FF5733) hoặc cung cấp đường dẫn đầy đủ đến hình ảnh nền trên thiết bị.</string>
+            <string>Cung cấp đường dẫn đầy đủ đến hình ảnh/video nền trên thiết bị. Bỏ trống để sử dụng hiệu ứng kính mờ (Blur) tự động theo giao diện Sáng/Tối của hệ thống.</string>
         </dict>
 
         <dict>
@@ -158,34 +158,6 @@
             <string>customBackgroundEnabled</string>
             <key>label</key>
             <string>Bật hình nền tùy chỉnh</string>
-            <key>PostNotification</key>
-            <string>com.34306.shimastyle/prefsChanged</string>
-        </dict>
-
-        <dict>
-            <key>cell</key>
-            <string>PSLinkCell</string>
-            <key>cellClass</key>
-            <string>PFSimpleLiteColorCell</string>
-            <key>defaults</key>
-            <string>com.34306.shimastyle</string>
-            <key>key</key>
-            <string>customBackgroundColorHex</string>
-            <key>default</key>
-            <string>#1C1C1E</string>
-            <key>libcolorpicker</key>
-            <dict>
-                <key>defaults</key>
-                <string>com.34306.shimastyle</string>
-                <key>key</key>
-                <string>customBackgroundColorHex</string>
-                <key>fallback</key>
-                <string>#1C1C1E</string>
-                <key>alpha</key>
-                <true/>
-            </dict>
-            <key>label</key>
-            <string>Màu nền</string>
             <key>PostNotification</key>
             <string>com.34306.shimastyle/prefsChanged</string>
         </dict>
