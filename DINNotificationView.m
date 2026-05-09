@@ -61,6 +61,8 @@
     _iconImageView.layer.cornerCurve = kCACornerCurveContinuous;
     _iconImageView.clipsToBounds = YES;
     _iconImageView.image = icon;
+    _iconImageView.layer.borderWidth = 1.0 / UIScreen.mainScreen.scale; // Viền nét mảnh 1 pixel vật lý
+    _iconImageView.layer.borderColor = [UIColor colorWithWhite:0.5 alpha:0.2].CGColor;
     _iconImageView.translatesAutoresizingMaskIntoConstraints = NO;
 
     _titleLabel = [[UILabel alloc] init];
@@ -72,42 +74,53 @@
     _titleLabel.text = displayTitle ?: @"Notification";
     _titleLabel.translatesAutoresizingMaskIntoConstraints = NO;
 
+    _messageContainer = [[UIView alloc] init];
+    _messageContainer.clipsToBounds = YES;
+    _messageContainer.translatesAutoresizingMaskIntoConstraints = NO;
+
     _messageLabel = [[UILabel alloc] init];
     _messageLabel.font = [UIFont systemFontOfSize:14]; // Tăng cỡ chữ nhẹ để cân đối với khung
     _messageLabel.textColor = [UIColor secondaryLabelColor];
     _messageLabel.numberOfLines = 1;
-    _messageLabel.lineBreakMode = NSLineBreakByTruncatingTail;
+    _messageLabel.lineBreakMode = NSLineBreakByClipping; // Không dùng dấu "..." để phục vụ chạy chữ (Marquee)
     _messageLabel.translatesAutoresizingMaskIntoConstraints = NO;
 
+    [_messageContainer addSubview:_messageLabel];
     [self addSubview:_iconImageView];
     [self addSubview:_titleLabel];
-    [self addSubview:_messageLabel];
+    [self addSubview:_messageContainer];
 
     // Cấu hình vị trí (Constraints) chung cho cả 2 trường hợp
     [NSLayoutConstraint activateConstraints:@[
-        // 1. Icon: Kích thước 44x44, đẩy vào trong 16pt từ mép trái
+        // 1. Icon: Kích thước 44x44, đưa ra sát viền hơn (cách 8pt thay vì 16pt)
         [_iconImageView.widthAnchor constraintEqualToConstant:44],
         [_iconImageView.heightAnchor constraintEqualToConstant:44],
-        [_iconImageView.leadingAnchor constraintEqualToAnchor:self.leadingAnchor constant:16],
+        [_iconImageView.leadingAnchor constraintEqualToAnchor:self.leadingAnchor constant:8],
         [_iconImageView.centerYAnchor constraintEqualToAnchor:self.centerYAnchor],
 
-        // 2. Lề trái/phải của Tiêu đề và Nội dung đều cách icon 12pt
-        [_titleLabel.leadingAnchor constraintEqualToAnchor:_iconImageView.trailingAnchor constant:12],
-        [_titleLabel.trailingAnchor constraintEqualToAnchor:self.trailingAnchor constant:-16],
+        // 2. Kéo Tiêu đề và Nội dung lại gần Icon hơn (cách 8pt thay vì 12pt)
+        [_titleLabel.leadingAnchor constraintEqualToAnchor:_iconImageView.trailingAnchor constant:8],
+        [_titleLabel.trailingAnchor constraintEqualToAnchor:self.trailingAnchor constant:-8],
         
-        [_messageLabel.leadingAnchor constraintEqualToAnchor:_iconImageView.trailingAnchor constant:12],
-        [_messageLabel.trailingAnchor constraintEqualToAnchor:self.trailingAnchor constant:-16],
+        [_messageContainer.leadingAnchor constraintEqualToAnchor:_iconImageView.trailingAnchor constant:8],
+        [_messageContainer.trailingAnchor constraintEqualToAnchor:self.trailingAnchor constant:-8],
+
+        // 3. Nội dung Label bên trong Container
+        [_messageLabel.leadingAnchor constraintEqualToAnchor:_messageContainer.leadingAnchor],
+        [_messageLabel.topAnchor constraintEqualToAnchor:_messageContainer.topAnchor],
+        [_messageLabel.bottomAnchor constraintEqualToAnchor:_messageContainer.bottomAnchor],
     ]];
 
     if (message.length > 0) {
         _messageLabel.text = message;
-        // Nếu có Nội dung: Tiêu đề ôm mép trên, Nội dung ôm mép dưới của Icon
+        // Thu ngắn khoảng cách giữa Tiêu đề và Nội dung: Cho 2 thành phần ôm sát vào đường giữa (CenterY) của Icon
         [NSLayoutConstraint activateConstraints:@[
-            [_titleLabel.topAnchor constraintEqualToAnchor:_iconImageView.topAnchor],
-            [_messageLabel.bottomAnchor constraintEqualToAnchor:_iconImageView.bottomAnchor constant:-1],
+            [_titleLabel.bottomAnchor constraintEqualToAnchor:_iconImageView.centerYAnchor constant:1],
+            [_messageContainer.topAnchor constraintEqualToAnchor:_iconImageView.centerYAnchor constant:-1],
+            [_messageContainer.heightAnchor constraintEqualToConstant:18]
         ]];
     } else {
-        _messageLabel.hidden = YES;
+        _messageContainer.hidden = YES;
         // Nếu KHÔNG có Nội dung: Tiêu đề tự động căn giữa theo Icon
         [NSLayoutConstraint activateConstraints:@[
             [_titleLabel.centerYAnchor constraintEqualToAnchor:_iconImageView.centerYAnchor],
@@ -126,6 +139,8 @@
     _iconImageView.layer.cornerCurve = kCACornerCurveContinuous;
     _iconImageView.clipsToBounds = YES;
     _iconImageView.image = icon;
+    _iconImageView.layer.borderWidth = 1.0 / UIScreen.mainScreen.scale;
+    _iconImageView.layer.borderColor = [UIColor colorWithWhite:0.5 alpha:0.2].CGColor;
     _iconImageView.translatesAutoresizingMaskIntoConstraints = NO;
 
     _titleLabel = [[UILabel alloc] init];
@@ -139,7 +154,7 @@
     UIStackView *hStack = [[UIStackView alloc]
         initWithArrangedSubviews:@[_iconImageView, _titleLabel]];
     hStack.axis = UILayoutConstraintAxisHorizontal;
-    hStack.spacing = 8;
+    hStack.spacing = 6; // Đưa chữ gần icon hơn
     hStack.alignment = UIStackViewAlignmentCenter;
     hStack.translatesAutoresizingMaskIntoConstraints = NO;
 
@@ -148,8 +163,8 @@
         [_iconImageView.widthAnchor constraintEqualToConstant:28],
         [_iconImageView.heightAnchor constraintEqualToConstant:28],
         [hStack.topAnchor constraintEqualToAnchor:self.topAnchor],
-        [hStack.leadingAnchor constraintEqualToAnchor:self.leadingAnchor constant:16], // Đẩy vào trong
-        [hStack.trailingAnchor constraintEqualToAnchor:self.trailingAnchor constant:-16],
+        [hStack.leadingAnchor constraintEqualToAnchor:self.leadingAnchor constant:8], // Đưa ra sát viền
+        [hStack.trailingAnchor constraintEqualToAnchor:self.trailingAnchor constant:-8],
         [hStack.bottomAnchor constraintEqualToAnchor:self.bottomAnchor],
     ]];
 }
@@ -164,6 +179,8 @@
     _iconImageView.layer.cornerCurve = kCACornerCurveContinuous;
     _iconImageView.clipsToBounds = YES;
     _iconImageView.image = icon;
+    _iconImageView.layer.borderWidth = 1.0 / UIScreen.mainScreen.scale;
+    _iconImageView.layer.borderColor = [UIColor colorWithWhite:0.5 alpha:0.2].CGColor;
     _iconImageView.translatesAutoresizingMaskIntoConstraints = NO;
 
     _titleLabel = [[UILabel alloc] init];
@@ -201,17 +218,38 @@
     
     if (_titleLabel) _titleLabel.text = displayTitle ?: @"Notification";
     
-    if (_messageLabel) {
+    if (_messageContainer) {
         if (message.length > 0) {
             _messageLabel.text = message;
-            _messageLabel.hidden = NO;
+            _messageContainer.hidden = NO;
+            _messageLabel.transform = CGAffineTransformIdentity; // Reset vị trí chạy chữ
         } else {
-            _messageLabel.hidden = YES;
+            _messageContainer.hidden = YES;
         }
     }
     
     if (icon && _iconImageView) {
         _iconImageView.image = icon;
+    }
+}
+
+#pragma mark - Marquee Animation
+
+- (void)startMarquee {
+    if (!_messageLabel || !_messageContainer || _messageContainer.hidden) return;
+    
+    [self.messageLabel.layer removeAllAnimations];
+    self.messageLabel.transform = CGAffineTransformIdentity;
+    
+    CGFloat textWidth = self.messageLabel.intrinsicContentSize.width;
+    CGFloat containerWidth = self.messageContainer.bounds.size.width;
+    
+    if (textWidth > containerWidth && containerWidth > 0) {
+        CGFloat distance = textWidth - containerWidth + 12; // Chạy lố ra 12pt để có khoảng thở
+        
+        [UIView animateWithDuration:2.5 delay:0.5 options:UIViewAnimationOptionCurveLinear | UIViewAnimationOptionBeginFromCurrentState animations:^{
+            self.messageLabel.transform = CGAffineTransformMakeTranslation(-distance, 0);
+        } completion:nil];
     }
 }
 

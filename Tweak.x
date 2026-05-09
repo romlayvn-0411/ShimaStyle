@@ -9,6 +9,7 @@
 
 @interface DINNotificationView (Stacking)
 - (void)updateTitle:(NSString *)title message:(NSString *)message appName:(NSString *)appName icon:(UIImage *)icon count:(NSInteger)count;
+- (void)startMarquee;
 @end
 
 // ============================================================================
@@ -526,7 +527,11 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
             if ([self.notifView respondsToSelector:@selector(updateTitle:message:appName:icon:count:)]) {
                 [self.notifView updateTitle:title message:message appName:appName icon:icon count:self.notificationCount];
             }
-        } completion:nil];
+    } completion:^(BOOL finished) {
+        if ([self.notifView respondsToSelector:@selector(startMarquee)]) {
+            [self.notifView startMarquee];
+        }
+    }];
 
         // Khởi động lại thời gian hiển thị
         [self.dismissTimer invalidate];
@@ -666,7 +671,12 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
         self.bgView.layer.cornerRadius = expandedRadius;
         self.notifView.alpha = 1.0;
         self.notifView.transform = CGAffineTransformIdentity;
-    } completion:nil];
+    } completion:^(BOOL finished) {
+        // Sau khi bung mở xong, kiểm tra và chạy hiệu ứng chữ nếu dài
+        if ([self.notifView respondsToSelector:@selector(startMarquee)]) {
+            [self.notifView startMarquee];
+        }
+    }];
 
     // Auto-dismiss after configured duration
     double duration = [DINPreferences sharedInstance].dismissDuration;

@@ -10,6 +10,7 @@ typedef NS_ENUM(NSInteger, DINNotificationStyle) {
 @property (nonatomic, strong, readonly) UIImageView *iconImageView;
 @property (nonatomic, strong, readonly) UILabel *titleLabel;
 @property (nonatomic, strong, readonly) UILabel *messageLabel;
+@property (nonatomic, strong, readonly) UIView *messageContainer;
 
 - (instancetype)initWithTitle:(NSString *)title
                       message:(NSString *)message
@@ -17,4 +18,5 @@ typedef NS_ENUM(NSInteger, DINNotificationStyle) {
                          icon:(UIImage *)icon
                         style:(DINNotificationStyle)style
                textColorStyle:(NSInteger)textColorStyle;
+- (void)startMarquee;
 @end
