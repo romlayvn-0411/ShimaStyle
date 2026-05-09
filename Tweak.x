@@ -268,14 +268,16 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
 
 - (CGRect)pillFrame {
     CGFloat screenWidth = UIScreen.mainScreen.bounds.size.width;
-    return CGRectMake((screenWidth - 126.0) / 2.0, 11.0, 126.0, 37.33);
+    CGFloat yOffset = [DINPreferences sharedInstance].notificationYOffset;
+    return CGRectMake((screenWidth - 126.0) / 2.0, 11.0 + yOffset, 126.0, 37.33);
 }
 
 - (CGRect)expandedFrameForWidth:(CGFloat)width height:(CGFloat)height {
     CGFloat screenWidth = UIScreen.mainScreen.bounds.size.width;
+    CGFloat yOffset = [DINPreferences sharedInstance].notificationYOffset;
     CGFloat w = MIN(width, screenWidth - 16.0);
     CGFloat h = MAX(70.0, MIN(height, 160.0));
-    return CGRectMake((screenWidth - w) / 2.0, 11.0, w, h);
+    return CGRectMake((screenWidth - w) / 2.0, 11.0 + yOffset, w, h);
 }
 
 - (void)ensureWindow {
@@ -412,20 +414,20 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
     switch (style) {
         case 1: // Compact
             expandedWidth = 300.0;
-            expandedHeight = 72.0;
-            centerYOffset = 12.0;
+            expandedHeight = 88.0;
+            centerYOffset = 16.0;
             leadingPad = 14.0;
             break;
         case 2: // Minimal
             expandedWidth = 200.0;
-            expandedHeight = 100.0;
-            centerYOffset = 14.0;
+            expandedHeight = 132.0;
+            centerYOffset = 15.0;
             leadingPad = 16.0;
             break;
         default: // Standard
             expandedWidth = 500.0; // Will be capped to screenWidth - 16
-            expandedHeight = 84.0;
-            centerYOffset = 14.0;
+            expandedHeight = 96.0;
+            centerYOffset = 16.0;
             leadingPad = 16.0;
             break;
     }
