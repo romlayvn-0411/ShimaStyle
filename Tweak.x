@@ -50,7 +50,7 @@
 // ============================================================================
 
 static NSDate *sLastNotificationTime = nil;
-static NSTimeInterval const kMinNotificationInterval = 1.0;
+static NSTimeInterval const kMinNotificationInterval = 0.2; // Giảm thời gian chặn để xử lý thông báo tức thì
 
 static BOOL dinShouldThrottle(void) {
     if (!sLastNotificationTime) return NO;
@@ -469,9 +469,9 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
         initWithStyle:UIImpactFeedbackStyleLight];
     [haptic impactOccurred];
 
-    // Spring expand animation
-    [UIView animateWithDuration:0.65 delay:0
-         usingSpringWithDamping:0.65 initialSpringVelocity:0.9
+    // Spring expand animation - Tăng tốc độ bung mở để tạo cảm giác "Snappy"
+    [UIView animateWithDuration:0.45 delay:0
+         usingSpringWithDamping:0.75 initialSpringVelocity:1.0
                         options:UIViewAnimationOptionAllowUserInteraction
                      animations:^{
         self.containerView.alpha = 1.0;
@@ -573,11 +573,16 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
 
     // Do NOT call %orig — fully suppress system notification (banner + notification center)
     // Show DI overlay instead
-    dispatch_async(dispatch_get_main_queue(), ^{
+    dispatch_block_t showBlock = ^{
         [[DINOverlayManager sharedInstance] showWithTitle:title message:message
-                                                 appName:appName icon:icon
-                                        bundleIdentifier:bundleIdentifier];
-    });
+                                                  appName:appName icon:icon
+                                         bundleIdentifier:bundleIdentifier];
+    };
+    if ([NSThread isMainThread]) {
+        showBlock(); // Nếu đang ở luồng chính thì hiển thị ngay lập tức không cần chờ
+    } else {
+        dispatch_async(dispatch_get_main_queue(), showBlock);
+    }
 }
 
 %end
