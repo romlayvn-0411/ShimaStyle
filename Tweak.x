@@ -551,16 +551,27 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
         return;
     }
 
-    // --- Fix: Trả lại thông báo gốc nếu màn hình đang khóa ---
+    // --- Fix: Trả lại thông báo gốc nếu màn hình đang khóa hoặc đang kéo Trung tâm thông báo ---
     BOOL isLocked = NO;
     Class SBLockScreenManagerClass = objc_lookUpClass("SBLockScreenManager");
     if (SBLockScreenManagerClass) {
         id lockScreenManager = ((id (*)(Class, SEL))objc_msgSend)(SBLockScreenManagerClass, sel_registerName("sharedInstance"));
         if (lockScreenManager) {
-            if ([lockScreenManager respondsToSelector:sel_registerName("isLockScreenVisible")]) {
-                isLocked = ((BOOL (*)(id, SEL))objc_msgSend)(lockScreenManager, sel_registerName("isLockScreenVisible"));
-            } else if ([lockScreenManager respondsToSelector:sel_registerName("isUILocked")]) {
-                isLocked = ((BOOL (*)(id, SEL))objc_msgSend)(lockScreenManager, sel_registerName("isUILocked"));
+            if ([lockScreenManager respondsToSelector:sel_registerName("isLockScreenVisible")] &&
+                ((BOOL (*)(id, SEL))objc_msgSend)(lockScreenManager, sel_registerName("isLockScreenVisible"))) {
+                isLocked = YES;
+            } else if ([lockScreenManager respondsToSelector:sel_registerName("isUILocked")] &&
+                       ((BOOL (*)(id, SEL))objc_msgSend)(lockScreenManager, sel_registerName("isUILocked"))) {
+                isLocked = YES;
+            } else if ([lockScreenManager respondsToSelector:sel_registerName("coverSheetViewController")]) {
+                id csvc = ((id (*)(id, SEL))objc_msgSend)(lockScreenManager, sel_registerName("coverSheetViewController"));
+                if (csvc) {
+                    if ([csvc respondsToSelector:sel_registerName("isPresented")] && ((BOOL (*)(id, SEL))objc_msgSend)(csvc, sel_registerName("isPresented"))) {
+                        isLocked = YES;
+                    } else if ([csvc respondsToSelector:sel_registerName("isPresenting")] && ((BOOL (*)(id, SEL))objc_msgSend)(csvc, sel_registerName("isPresenting"))) {
+                        isLocked = YES;
+                    }
+                }
             }
         }
     }
