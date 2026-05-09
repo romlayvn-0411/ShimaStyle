@@ -64,18 +64,27 @@ static BOOL dinShouldThrottle(void) {
 static UIImage *dinAppIcon(NSString *bundleIdentifier) {
     if (!bundleIdentifier) return nil;
 
+    static NSCache *sAppIconCache = nil;
+    static dispatch_once_t onceTokenIcon;
+    dispatch_once(&onceTokenIcon, ^{ sAppIconCache = [[NSCache alloc] init]; });
+
+    UIImage *cachedIcon = [sAppIconCache objectForKey:bundleIdentifier];
+    if (cachedIcon) return cachedIcon;
+
+    UIImage *foundIcon = nil;
+
     // Method 1: UIImage private API (most reliable)
     @try {
         SEL iconSel = sel_registerName("_applicationIconImageForBundleIdentifier:format:scale:");
         if ([UIImage respondsToSelector:iconSel]) {
-            UIImage *img = ((id (*)(Class, SEL, id, int, CGFloat))objc_msgSend)(
+            foundIcon = ((id (*)(Class, SEL, id, int, CGFloat))objc_msgSend)(
                 [UIImage class], iconSel, bundleIdentifier, 2, UIScreen.mainScreen.scale);
-            if (img) return img;
         }
     } @catch (NSException *e) {}
 
     // Method 2: SBIconController → SBIconModel
-    @try {
+    if (!foundIcon) {
+        @try {
         Class iconControllerClass = objc_lookUpClass("SBIconController");
         if (iconControllerClass) {
             id iconController = ((id (*)(Class, SEL))objc_msgSend)(
@@ -88,37 +97,39 @@ static UIImage *dinAppIcon(NSString *bundleIdentifier) {
                         sel_registerName("applicationIconForBundleIdentifier:"),
                         bundleIdentifier);
                     if (icon && [icon respondsToSelector:sel_registerName("getIconImage:")]) {
-                        UIImage *image = ((id (*)(id, SEL, int))objc_msgSend)(
+                            foundIcon = ((id (*)(id, SEL, int))objc_msgSend)(
                             icon, sel_registerName("getIconImage:"), 2);
-                        if (image) return image;
                     }
-                    if (icon && [icon respondsToSelector:sel_registerName("generateIconImage:")]) {
-                        UIImage *image = ((id (*)(id, SEL, int))objc_msgSend)(
+                        else if (icon && [icon respondsToSelector:sel_registerName("generateIconImage:")]) {
+                            foundIcon = ((id (*)(id, SEL, int))objc_msgSend)(
                             icon, sel_registerName("generateIconImage:"), 2);
-                        if (image) return image;
                     }
                 }
             }
         }
-    } @catch (NSException *e) {}
+        } @catch (NSException *e) {}
+    }
 
     // Method 3: Load from app bundle
-    @try {
+    if (!foundIcon) {
+        @try {
         LSApplicationProxy *proxy = [LSApplicationProxy applicationProxyForIdentifier:bundleIdentifier];
         if (proxy) {
             NSURL *bundleURL = [proxy bundleURL];
             if (bundleURL) {
                 for (NSString *iconName in @[@"AppIcon60x60@2x.png", @"AppIcon60x60@3x.png",
                         @"AppIcon76x76@2x.png", @"Icon-60@2x.png", @"Icon-60@3x.png"]) {
-                    UIImage *img = [UIImage imageWithContentsOfFile:
+                        UIImage *img = [UIImage imageWithContentsOfFile:
                         [[bundleURL path] stringByAppendingPathComponent:iconName]];
-                    if (img) return img;
+                        if (img) { foundIcon = img; break; }
                 }
             }
         }
-    } @catch (NSException *e) {}
+        } @catch (NSException *e) {}
+    }
 
-    return nil;
+    if (foundIcon) [sAppIconCache setObject:foundIcon forKey:bundleIdentifier];
+    return foundIcon;
 }
 
 // Generate a placeholder icon with app initial
@@ -540,6 +551,17 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
         return;
     }
 
+    // --- Fix: Trả lại thông báo gốc nếu màn hình đang khóa ---
+    BOOL isLocked = NO;
+    id sb = [UIApplication sharedApplication];
+    if ([sb respondsToSelector:sel_registerName("isLocked")]) {
+        isLocked = ((BOOL (*)(id, SEL))objc_msgSend)(sb, sel_registerName("isLocked"));
+    }
+    if (isLocked) {
+        %orig;
+        return;
+    }
+
     NCNotificationContent *content = [request content];
     if (!content) { %orig; return; }
 
@@ -556,16 +578,25 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
     NSString *bundleIdentifier = [request sectionIdentifier];
     NSString *appName = nil;
 
-    SBApplicationController *appController =
-        [objc_lookUpClass("SBApplicationController") sharedInstance];
-    if (appController && bundleIdentifier) {
-        SBApplication *app = [appController applicationWithBundleIdentifier:bundleIdentifier];
-        if (app) appName = [app displayName];
-    }
-    if (!appName) {
-        LSApplicationProxy *proxy =
-            [LSApplicationProxy applicationProxyForIdentifier:bundleIdentifier];
-        appName = [proxy localizedName];
+    // --- Fix: Lưu Cache tên ứng dụng để tránh Delay ---
+    static NSCache *sAppNameCache = nil;
+    static dispatch_once_t onceTokenName;
+    dispatch_once(&onceTokenName, ^{ sAppNameCache = [[NSCache alloc] init]; });
+
+    if (bundleIdentifier) {
+        appName = [sAppNameCache objectForKey:bundleIdentifier];
+        if (!appName) {
+            SBApplicationController *appController = [objc_lookUpClass("SBApplicationController") sharedInstance];
+            if (appController) {
+                SBApplication *app = [appController applicationWithBundleIdentifier:bundleIdentifier];
+                if (app && [app respondsToSelector:@selector(displayName)]) appName = [app displayName];
+            }
+            if (!appName) {
+                LSApplicationProxy *proxy = [LSApplicationProxy applicationProxyForIdentifier:bundleIdentifier];
+                if (proxy) appName = [proxy localizedName];
+            }
+            if (appName) [sAppNameCache setObject:appName forKey:bundleIdentifier];
+        }
     }
 
     UIImage *icon = dinAppIcon(bundleIdentifier);
