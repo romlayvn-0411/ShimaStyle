@@ -614,32 +614,29 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
     [self.containerView addSubview:self.notifView];
 
     // Layout dimensions per style
-    CGFloat expandedWidth, expandedHeight, centerYOffset, leadingPad;
+    CGFloat expandedWidth, expandedHeight, centerYOffset;
     switch (style) {
         case 1: // Compact
             expandedWidth = 220.0;
             expandedHeight = 56.0;
             centerYOffset = 0.0;
-            leadingPad = 12.0;
             break;
         case 2: // Minimal
             expandedWidth = 120.0;
             expandedHeight = 80.0;
             centerYOffset = 0.0;
-            leadingPad = 12.0;
             break;
         default: // Standard
             expandedWidth = 320.0;
             expandedHeight = 72.0;
             centerYOffset = 0.0;
-            leadingPad = 16.0;
             break;
     }
 
     [NSLayoutConstraint activateConstraints:@[
         [self.notifView.centerYAnchor constraintEqualToAnchor:self.containerView.centerYAnchor constant:centerYOffset],
-        [self.notifView.centerXAnchor constraintEqualToAnchor:self.containerView.centerXAnchor],
-        [self.notifView.widthAnchor constraintLessThanOrEqualToAnchor:self.containerView.widthAnchor constant:-(leadingPad * 2)],
+        [self.notifView.leadingAnchor constraintEqualToAnchor:self.containerView.leadingAnchor],
+        [self.notifView.trailingAnchor constraintEqualToAnchor:self.containerView.trailingAnchor],
     ]];
 
     // Start from pill shape
