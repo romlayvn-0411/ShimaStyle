@@ -45,6 +45,12 @@
 @interface SBSystemApertureContainerView : UIView
 @end
 
+@interface SBNCAlertingController : NSObject
+@end
+
+@interface NCNotificationBannerDestination : NSObject
+@end
+
 // ============================================================================
 // MARK: - Rate Limiting
 // ============================================================================
@@ -55,6 +61,37 @@ static NSTimeInterval const kMinNotificationInterval = 0.2; // Giảm thời gia
 static BOOL dinShouldThrottle(void) {
     if (!sLastNotificationTime) return NO;
     return [[NSDate date] timeIntervalSinceDate:sLastNotificationTime] < kMinNotificationInterval;
+}
+
+// ============================================================================
+// MARK: - Helper: Lock Screen & CoverSheet State
+// ============================================================================
+
+static BOOL dinIsDeviceLockedOrInCoverSheet(void) {
+    BOOL isLocked = NO;
+    Class SBLockScreenManagerClass = objc_lookUpClass("SBLockScreenManager");
+    if (SBLockScreenManagerClass) {
+        id lockScreenManager = ((id (*)(Class, SEL))objc_msgSend)(SBLockScreenManagerClass, sel_registerName("sharedInstance"));
+        if (lockScreenManager) {
+            if ([lockScreenManager respondsToSelector:sel_registerName("isLockScreenVisible")] &&
+                ((BOOL (*)(id, SEL))objc_msgSend)(lockScreenManager, sel_registerName("isLockScreenVisible"))) {
+                isLocked = YES;
+            } else if ([lockScreenManager respondsToSelector:sel_registerName("isUILocked")] &&
+                       ((BOOL (*)(id, SEL))objc_msgSend)(lockScreenManager, sel_registerName("isUILocked"))) {
+                isLocked = YES;
+            } else if ([lockScreenManager respondsToSelector:sel_registerName("coverSheetViewController")]) {
+                id csvc = ((id (*)(id, SEL))objc_msgSend)(lockScreenManager, sel_registerName("coverSheetViewController"));
+                if (csvc) {
+                    if ([csvc respondsToSelector:sel_registerName("isPresented")] && ((BOOL (*)(id, SEL))objc_msgSend)(csvc, sel_registerName("isPresented"))) {
+                        isLocked = YES;
+                    } else if ([csvc respondsToSelector:sel_registerName("isPresenting")] && ((BOOL (*)(id, SEL))objc_msgSend)(csvc, sel_registerName("isPresenting"))) {
+                        isLocked = YES;
+                    }
+                }
+            }
+        }
+    }
+    return isLocked;
 }
 
 // ============================================================================
@@ -475,10 +512,7 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
     CGRect expandedFrame = [self expandedFrameForWidth:expandedWidth height:expandedHeight];
     CGFloat expandedRadius = expandedFrame.size.height / 2.0; // Capsule shape like AirDrop
 
-    // Haptic
-    UIImpactFeedbackGenerator *haptic = [[UIImpactFeedbackGenerator alloc]
-        initWithStyle:UIImpactFeedbackStyleLight];
-    [haptic impactOccurred];
+    // Đã xóa hiệu ứng Haptic rung ở đây vì %orig sẽ tự động kích hoạt rung/chuông mặc định của iOS
 
     // Spring expand animation - Tăng tốc độ bung mở để tạo cảm giác "Snappy"
     [UIView animateWithDuration:0.45 delay:0
@@ -543,49 +577,28 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
 %hook NCNotificationDispatcher
 
 - (void)postNotificationWithRequest:(NCNotificationRequest *)request {
+    // 1. Luôn gọi %orig ĐẦU TIÊN để hệ thống lưu thông báo (vào Màn hình khóa/Trung tâm thông báo) và phát âm thanh
+    %orig;
+
     DINPreferences *prefs = [DINPreferences sharedInstance];
 
-    // If tweak disabled or DI notification disabled, use system notification
+    // 2. Nếu Tweak bị tắt, không làm gì thêm
     if (!prefs.enabled || !prefs.notificationEnabled) {
-        %orig;
         return;
     }
 
-    // --- Fix: Trả lại thông báo gốc nếu màn hình đang khóa hoặc đang kéo Trung tâm thông báo ---
-    BOOL isLocked = NO;
-    Class SBLockScreenManagerClass = objc_lookUpClass("SBLockScreenManager");
-    if (SBLockScreenManagerClass) {
-        id lockScreenManager = ((id (*)(Class, SEL))objc_msgSend)(SBLockScreenManagerClass, sel_registerName("sharedInstance"));
-        if (lockScreenManager) {
-            if ([lockScreenManager respondsToSelector:sel_registerName("isLockScreenVisible")] &&
-                ((BOOL (*)(id, SEL))objc_msgSend)(lockScreenManager, sel_registerName("isLockScreenVisible"))) {
-                isLocked = YES;
-            } else if ([lockScreenManager respondsToSelector:sel_registerName("isUILocked")] &&
-                       ((BOOL (*)(id, SEL))objc_msgSend)(lockScreenManager, sel_registerName("isUILocked"))) {
-                isLocked = YES;
-            } else if ([lockScreenManager respondsToSelector:sel_registerName("coverSheetViewController")]) {
-                id csvc = ((id (*)(id, SEL))objc_msgSend)(lockScreenManager, sel_registerName("coverSheetViewController"));
-                if (csvc) {
-                    if ([csvc respondsToSelector:sel_registerName("isPresented")] && ((BOOL (*)(id, SEL))objc_msgSend)(csvc, sel_registerName("isPresented"))) {
-                        isLocked = YES;
-                    } else if ([csvc respondsToSelector:sel_registerName("isPresenting")] && ((BOOL (*)(id, SEL))objc_msgSend)(csvc, sel_registerName("isPresenting"))) {
-                        isLocked = YES;
-                    }
-                }
-            }
-        }
-    }
-    if (isLocked) {
-        %orig;
+    // 3. Nếu đang ở màn hình khóa hoặc đang kéo thanh thông báo, nhường quyền cho iOS hiển thị Banner gốc
+    if (dinIsDeviceLockedOrInCoverSheet()) {
         return;
     }
 
+    // 4. Bắt đầu hiển thị giao diện ShimaStyle
     NCNotificationContent *content = [request content];
-    if (!content) { %orig; return; }
+    if (!content) return;
 
     NSString *title = [content title];
     NSString *message = [content message];
-    if (!title && !message) { %orig; return; }
+    if (!title && !message) return;
 
     if (dinShouldThrottle()) {
         // Suppress entirely when throttled
@@ -634,6 +647,28 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
     }
 }
 
+%end
+
+// --- Chặn Banner mặc định của iOS khi ShimaStyle đang hoạt động trên màn hình chính ---
+
+%hook SBNCAlertingController
+- (BOOL)alertDispatcher:(id)arg1 shouldPresentAlertForRequest:(id)arg2 {
+    DINPreferences *prefs = [DINPreferences sharedInstance];
+    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) {
+        return NO; // Chặn Banner
+    }
+    return %orig;
+}
+%end
+
+%hook NCNotificationBannerDestination
+- (BOOL)canReceiveNotificationRequest:(id)arg1 {
+    DINPreferences *prefs = [DINPreferences sharedInstance];
+    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) {
+        return NO; // Chặn Banner
+    }
+    return %orig;
+}
 %end
 
 // ============================================================================
