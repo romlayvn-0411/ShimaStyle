@@ -12,6 +12,13 @@
     return self;
 }
 
+- (UITableViewStyle)tableViewStyle {
+    if (@available(iOS 13.0, *)) {
+        return UITableViewStyleInsetGrouped; // Sử dụng giao diện bo góc chuẩn iOS 18
+    }
+    return UITableViewStyleGrouped;
+}
+
 - (UIView *)headerView {
     UILabel *label = [[UILabel alloc] init];
     label.text = @"ShimaStyle";

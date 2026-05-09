@@ -4,14 +4,14 @@
 <dict>
     <key>items</key>
     <array>
-        <!-- Kích hoạt chung -->
+        <!-- CHUNG (GENERAL) -->
         <dict>
             <key>cell</key>
             <string>PSGroupCell</string>
             <key>label</key>
             <string>Cấu hình chung</string>
             <key>footerText</key>
-            <string>Bật/tắt Tweak và gửi thông báo thử nghiệm để xem trước giao diện.</string>
+            <string>Bật/tắt Tweak và thay thế thông báo mặc định của hệ thống.</string>
         </dict>
         <dict>
             <key>cell</key>
@@ -27,25 +27,7 @@
             <key>PostNotification</key>
             <string>com.34306.shimastyle/prefsChanged</string>
         </dict>
-        <dict>
-            <key>cell</key>
-            <string>PSButtonCell</string>
-            <key>label</key>
-            <string>Gửi thông báo thử nghiệm</string>
-            <key>action</key>
-            <string>testNotification</string>
-        </dict>
 
-        <!-- Hành vi thông báo -->
-        <dict>
-            <key>cell</key>
-            <string>PSGroupCell</string>
-            <key>label</key>
-            <string>Hành vi &amp; Thời gian</string>
-            <key>footerText</key>
-            <string>Đóng sau (giây): Thời gian thông báo hiển thị trước khi tự ẩn.
-Tốc độ hoạt ảnh: Tốc độ bung mở và thu nhỏ khung (Mặc định: 0.45s).</string>
-        </dict>
         <dict>
             <key>cell</key>
             <string>PSSwitchCell</string>
@@ -59,6 +41,78 @@ Tốc độ hoạt ảnh: Tốc độ bung mở và thu nhỏ khung (Mặc đị
             <string>Thay thế thông báo gốc</string>
             <key>PostNotification</key>
             <string>com.34306.shimastyle/prefsChanged</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSButtonCell</string>
+            <key>label</key>
+            <string>Gửi thông báo thử nghiệm</string>
+            <key>action</key>
+            <string>testNotification</string>
+        </dict>
+
+        <!-- BỐ CỤC (LAYOUT) -->
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>label</key>
+            <string>Kiểu dáng hiển thị</string>
+            <key>footerText</key>
+            <string>Lựa chọn bố cục hiển thị phù hợp với sở thích của bạn.</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSegmentCell</string>
+            <key>cell</key>
+            <string>PSSliderCell</string>
+            <key>default</key>
+            <real>5.0</real>
+            <key>defaults</key>
+            <string>com.34306.shimastyle</string>
+            <key>key</key>
+            <string>dismissDuration</string>
+            <key>min</key>
+            <real>1.0</real>
+            <key>max</key>
+            <real>15.0</real>
+            <key>showValue</key>
+            <true/>
+            <key>PostNotification</key>
+            <string>com.34306.shimastyle/prefsChanged</string>
+        </dict>
+
+        <!-- MÀU SẮC VĂN BẢN (TEXT COLOR) -->
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>label</key>
+            <string>Màu sắc văn bản</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSegmentCell</string>
+            <key>default</key>
+            <integer>0</integer>
+            <key>defaults</key>
+            <string>com.34306.shimastyle</string>
+            <key>key</key>
+            <string>textColorStyle</string>
+            <key>validValues</key>
+            <array> <integer>0</integer> <integer>1</integer> <integer>2</integer> </array>
+            <key>validTitles</key>
+            <array> <string>Chữ tự động</string> <string>Chữ sáng</string> <string>Chữ tối</string> </array>
+            <key>PostNotification</key>
+            <string>com.34306.shimastyle/prefsChanged</string>
+        </dict>
+
+        <!-- THỜI GIAN (DURATION) -->
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>label</key>
+            <string>Thời gian tự động đóng</string>
+            <key>footerText</key>
+            <string>Thời gian thông báo hiển thị trên màn hình trước khi tự động thu nhỏ.</string>
         </dict>
         <dict>
             <key>cell</key>
@@ -77,6 +131,16 @@ Tốc độ hoạt ảnh: Tốc độ bung mở và thu nhỏ khung (Mặc đị
             <true/>
             <key>PostNotification</key>
             <string>com.34306.shimastyle/prefsChanged</string>
+        </dict>
+
+        <!-- HOẠT ẢNH (ANIMATION) -->
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>label</key>
+            <string>Tốc độ hoạt ảnh</string>
+            <key>footerText</key>
+            <string>Tốc độ bung mở và thu nhỏ của khung Dynamic Island (Mặc định: 0.45s).</string>
         </dict>
         <dict>
             <key>cell</key>
@@ -97,46 +161,14 @@ Tốc độ hoạt ảnh: Tốc độ bung mở và thu nhỏ khung (Mặc đị
             <string>com.34306.shimastyle/prefsChanged</string>
         </dict>
 
-        <!-- Giao diện hiển thị -->
+        <!-- VỊ TRÍ (OFFSET) -->
         <dict>
             <key>cell</key>
             <string>PSGroupCell</string>
             <key>label</key>
-            <string>Giao diện &amp; Bố cục</string>
+            <string>Căn chỉnh vị trí dọc</string>
             <key>footerText</key>
-            <string>Vị trí dọc (Tai thỏ): Kéo thanh trượt để đẩy khung thông báo xuống thấp hơn tránh vướng tai thỏ nguyên bản của thiết bị.</string>
-        </dict>
-        <dict>
-            <key>cell</key>
-            <string>PSSegmentCell</string>
-            <key>default</key>
-            <integer>0</integer>
-            <key>defaults</key>
-            <string>com.34306.shimastyle</string>
-            <key>key</key>
-            <string>notificationStyle</string>
-            <key>validValues</key>
-            <array> <integer>0</integer> <integer>1</integer> <integer>2</integer> </array>
-            <key>validTitles</key>
-            <array> <string>Tiêu chuẩn</string> <string>Nhỏ gọn</string> <string>Tối giản</string> </array>
-            <key>PostNotification</key>
-            <string>com.34306.shimastyle/prefsChanged</string>
-        </dict>
-        <dict>
-            <key>cell</key>
-            <string>PSSegmentCell</string>
-            <key>default</key>
-            <integer>0</integer>
-            <key>defaults</key>
-            <string>com.34306.shimastyle</string>
-            <key>key</key>
-            <string>textColorStyle</string>
-            <key>validValues</key>
-            <array> <integer>0</integer> <integer>1</integer> <integer>2</integer> </array>
-            <key>validTitles</key>
-            <array> <string>Chữ tự động</string> <string>Chữ sáng</string> <string>Chữ tối</string> </array>
-            <key>PostNotification</key>
-            <string>com.34306.shimastyle/prefsChanged</string>
+            <string>Kéo thanh trượt để đẩy khung thông báo xuống thấp hơn, giúp tránh bị che khuất bởi cụm Camera/Tai thỏ.</string>
         </dict>
         <dict>
             <key>cell</key>
@@ -157,32 +189,14 @@ Tốc độ hoạt ảnh: Tốc độ bung mở và thu nhỏ khung (Mặc đị
             <string>com.34306.shimastyle/prefsChanged</string>
         </dict>
 
-        <!-- Nền & Độ mờ -->
+        <!-- NỀN (BACKGROUND) -->
         <dict>
             <key>cell</key>
             <string>PSGroupCell</string>
             <key>label</key>
-            <string>Màu nền &amp; Độ mờ</string>
+            <string>Hình nền &amp; Độ mờ</string>
             <key>footerText</key>
-            <string>Độ mờ thứ 1 (Blur) được áp dụng khi bạn sử dụng nền hệ thống. Độ mờ thứ 2 được áp dụng khi bạn bật ảnh/video nền riêng.</string>
-        </dict>
-        <dict>
-            <key>cell</key>
-            <string>PSSliderCell</string>
-            <key>default</key>
-            <real>1.0</real>
-            <key>defaults</key>
-            <string>com.34306.shimastyle</string>
-            <key>key</key>
-            <string>blurOpacity</string>
-            <key>min</key>
-            <real>0.0</real>
-            <key>max</key>
-            <real>1.0</real>
-            <key>showValue</key>
-            <true/>
-            <key>PostNotification</key>
-            <string>com.34306.shimastyle/prefsChanged</string>
+            <string>Độ mờ kính (Blur) áp dụng cho nền mặc định. Nếu bật Ảnh nền riêng, độ mờ ảnh sẽ được sử dụng.</string>
         </dict>
         <dict>
             <key>cell</key>
@@ -214,13 +228,19 @@ Tốc độ hoạt ảnh: Tốc độ bung mở và thu nhỏ khung (Mặc đị
         </dict>
         <dict>
             <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>label</key>
+            <string>Độ mờ kính (Blur) hệ thống</string>
+        </dict>
+        <dict>
+            <key>cell</key>
             <string>PSSliderCell</string>
             <key>default</key>
             <real>1.0</real>
             <key>defaults</key>
             <string>com.34306.shimastyle</string>
             <key>key</key>
-            <string>backgroundOpacity</string>
+            <string>blurOpacity</string>
             <key>min</key>
             <real>0.0</real>
             <key>max</key>
@@ -231,14 +251,14 @@ Tốc độ hoạt ảnh: Tốc độ bung mở và thu nhỏ khung (Mặc đị
             <string>com.34306.shimastyle/prefsChanged</string>
         </dict>
 
-        <!-- Hệ thống -->
+        <!-- HỆ THỐNG -->
         <dict>
             <key>cell</key>
             <string>PSGroupCell</string>
             <key>label</key>
             <string>Hệ thống</string>
             <key>footerText</key>
-            <string>Cần khởi động lại để các thay đổi liên quan đến hình nền tuỳ chỉnh được áp dụng.</string>
+            <string>Chỉ cần khởi động lại (Respring) khi bạn thay đổi Ảnh/Video nền tùy chỉnh.</string>
         </dict>
         <dict>
             <key>cell</key>
@@ -249,13 +269,15 @@ Tốc độ hoạt ảnh: Tốc độ bung mở và thu nhỏ khung (Mặc đị
             <string>respring</string>
         </dict>
 
-        <!-- Credits -->
+        <!-- THÔNG TIN -->
         <dict>
             <key>cell</key>
             <string>PSGroupCell</string>
             <key>footerText</key>
-            <string>ShimaStyle v1.0.0
+            <string>ShimaStyle v1.0.3
 Hỗ trợ iOS 16 - 26.</string>
+            <key>footerAlignment</key>
+            <integer>1</integer>
         </dict>
     </array>
     <key>title</key>
