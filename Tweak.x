@@ -271,6 +271,26 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
 // MARK: - Pass-through Views
 // ============================================================================
 
+@class DINPassthroughWindow;
+
+@interface DINOverlayManager : NSObject
+@property (nonatomic, strong) DINPassthroughWindow *window;
+@property (nonatomic, strong) UIView *containerView;
+@property (nonatomic, strong) UIView *bgView;
+@property (nonatomic, strong) DINNotificationView *notifView;
+@property (nonatomic, strong) NSTimer *dismissTimer;
+@property (nonatomic, copy) NSString *currentBundleIdentifier;
+@property (nonatomic, assign) BOOL showing;
+@property (nonatomic, assign) NSInteger notificationCount;
++ (instancetype)sharedInstance;
+- (void)updateLayoutForNewSize:(CGSize)size;
+- (void)showWithTitle:(NSString *)title message:(NSString *)message
+              appName:(NSString *)appName icon:(UIImage *)icon
+     bundleIdentifier:(NSString *)bundleIdentifier;
+- (void)dismiss;
+- (void)openAppAndDismiss;
+@end
+
 @interface DINPassthroughView : UIView
 @end
 
@@ -322,24 +342,6 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
 // ============================================================================
 // MARK: - Dynamic Island Overlay Manager
 // ============================================================================
-
-@interface DINOverlayManager : NSObject
-@property (nonatomic, strong) DINPassthroughWindow *window;
-@property (nonatomic, strong) UIView *containerView;
-@property (nonatomic, strong) UIView *bgView;
-@property (nonatomic, strong) DINNotificationView *notifView;
-@property (nonatomic, strong) NSTimer *dismissTimer;
-@property (nonatomic, copy) NSString *currentBundleIdentifier;
-@property (nonatomic, assign) BOOL showing;
-@property (nonatomic, assign) NSInteger notificationCount;
-+ (instancetype)sharedInstance;
-- (void)updateLayoutForNewSize:(CGSize)size;
-- (void)showWithTitle:(NSString *)title message:(NSString *)message
-              appName:(NSString *)appName icon:(UIImage *)icon
-     bundleIdentifier:(NSString *)bundleIdentifier;
-- (void)dismiss;
-- (void)openAppAndDismiss;
-@end
 
 @implementation DINOverlayManager
 
