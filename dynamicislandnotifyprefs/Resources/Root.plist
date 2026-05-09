@@ -124,7 +124,6 @@ Tốc độ hoạt ảnh: Tốc độ bung mở và thu nhỏ khung (Mặc đị
         </dict>
         <dict>
             <key>cell</key>
-            <key>cell</key>
             <string>PSSegmentCell</string>
             <key>default</key>
             <integer>0</integer>
