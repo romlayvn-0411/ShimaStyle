@@ -407,25 +407,26 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
                                                           style:(DINNotificationStyle)style];
     self.notifView.translatesAutoresizingMaskIntoConstraints = NO;
     self.notifView.alpha = 0;
+    self.notifView.transform = CGAffineTransformMakeScale(0.7, 0.7);
     [self.containerView addSubview:self.notifView];
 
     // Layout dimensions per style
     CGFloat expandedWidth, expandedHeight, centerYOffset, leadingPad;
     switch (style) {
         case 1: // Compact
-            expandedWidth = 260.0;
-            expandedHeight = 76.0;
-            centerYOffset = 10.0;
-            leadingPad = 14.0;
+            expandedWidth = 220.0;
+            expandedHeight = 64.0;
+            centerYOffset = 8.0;
+            leadingPad = 12.0;
             break;
         case 2: // Minimal
-            expandedWidth = 160.0;
-            expandedHeight = 116.0;
-            centerYOffset = 14.0;
-            leadingPad = 16.0;
+            expandedWidth = 120.0;
+            expandedHeight = 96.0;
+            centerYOffset = 10.0;
+            leadingPad = 12.0;
             break;
         default: // Standard
-            expandedWidth = 350.0;
+            expandedWidth = 320.0;
             expandedHeight = 88.0;
             centerYOffset = 14.0;
             leadingPad = 16.0;
@@ -466,6 +467,7 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
         self.containerView.frame = expandedFrame;
         self.containerView.layer.cornerRadius = expandedRadius;
         self.notifView.alpha = 1.0;
+        self.notifView.transform = CGAffineTransformIdentity;
     } completion:nil];
 
     // Auto-dismiss after configured duration
@@ -484,35 +486,27 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
     CGRect pill = [self pillFrame];
     CGFloat pillRadius = pill.size.height / 2.0;
 
-    // Phase 1: Fade out content smoothly (like system DI)
-    [UIView animateWithDuration:0.35 delay:0
-                        options:UIViewAnimationOptionCurveEaseIn
-                     animations:^{
-        self.notifView.alpha = 0;
-        self.bgView.alpha = 0;
-    } completion:nil];
-
-    // Phase 2: Shrink container back to pill and fade out
-    [UIView animateWithDuration:0.8 delay:0.1
-         usingSpringWithDamping:0.9 initialSpringVelocity:0.3
+    // Hiệu ứng "hút" (Suck in) mượt mà và tự nhiên
+    [UIView animateWithDuration:0.45 delay:0
+         usingSpringWithDamping:0.75 initialSpringVelocity:0.8
                         options:UIViewAnimationOptionCurveEaseInOut
                      animations:^{
         self.containerView.frame = pill;
         self.containerView.layer.cornerRadius = pillRadius;
-    } completion:nil];
-
-    // Phase 3: Fade out container after shrink starts
-    [UIView animateWithDuration:0.4 delay:0.35
-                        options:UIViewAnimationOptionCurveEaseIn
-                     animations:^{
-        self.containerView.alpha = 0;
+        self.notifView.transform = CGAffineTransformMakeScale(0.7, 0.7);
+        self.notifView.alpha = 0;
+        self.bgView.alpha = 0;
     } completion:^(BOOL finished) {
-        self.window.hidden = YES;
-        self.showing = NO;
-        [self.notifView removeFromSuperview];
-        [self.bgView removeFromSuperview];
-        self.notifView = nil;
-        self.bgView = nil;
+        [UIView animateWithDuration:0.2 animations:^{
+            self.containerView.alpha = 0;
+        } completion:^(BOOL finished) {
+            self.window.hidden = YES;
+            self.showing = NO;
+            [self.notifView removeFromSuperview];
+            [self.bgView removeFromSuperview];
+            self.notifView = nil;
+            self.bgView = nil;
+        }];
     }];
 }
 

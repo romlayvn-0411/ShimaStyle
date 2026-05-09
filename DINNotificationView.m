@@ -88,14 +88,14 @@
                          icon:(UIImage *)icon {
     _iconImageView = [[UIImageView alloc] init];
     _iconImageView.contentMode = UIViewContentModeScaleAspectFill;
-    _iconImageView.layer.cornerRadius = 8;
+    _iconImageView.layer.cornerRadius = 6;
     _iconImageView.layer.cornerCurve = kCACornerCurveContinuous;
     _iconImageView.clipsToBounds = YES;
     _iconImageView.image = icon;
     _iconImageView.translatesAutoresizingMaskIntoConstraints = NO;
 
     _titleLabel = [[UILabel alloc] init];
-    _titleLabel.font = [UIFont systemFontOfSize:14 weight:UIFontWeightSemibold];
+    _titleLabel.font = [UIFont systemFontOfSize:13 weight:UIFontWeightSemibold];
     _titleLabel.textColor = [UIColor labelColor];
     _titleLabel.numberOfLines = 1;
     _titleLabel.lineBreakMode = NSLineBreakByTruncatingTail;
@@ -105,14 +105,14 @@
     UIStackView *hStack = [[UIStackView alloc]
         initWithArrangedSubviews:@[_iconImageView, _titleLabel]];
     hStack.axis = UILayoutConstraintAxisHorizontal;
-    hStack.spacing = 10;
+    hStack.spacing = 8;
     hStack.alignment = UIStackViewAlignmentCenter;
     hStack.translatesAutoresizingMaskIntoConstraints = NO;
 
     [self addSubview:hStack];
     [NSLayoutConstraint activateConstraints:@[
-        [_iconImageView.widthAnchor constraintEqualToConstant:32],
-        [_iconImageView.heightAnchor constraintEqualToConstant:32],
+        [_iconImageView.widthAnchor constraintEqualToConstant:28],
+        [_iconImageView.heightAnchor constraintEqualToConstant:28],
         [hStack.topAnchor constraintEqualToAnchor:self.topAnchor],
         [hStack.leadingAnchor constraintEqualToAnchor:self.leadingAnchor],
         [hStack.trailingAnchor constraintEqualToAnchor:self.trailingAnchor],
@@ -126,7 +126,7 @@
                            icon:(UIImage *)icon {
     _iconImageView = [[UIImageView alloc] init];
     _iconImageView.contentMode = UIViewContentModeScaleAspectFill;
-    _iconImageView.layer.cornerRadius = 14;
+    _iconImageView.layer.cornerRadius = 10;
     _iconImageView.layer.cornerCurve = kCACornerCurveContinuous;
     _iconImageView.clipsToBounds = YES;
     _iconImageView.image = icon;
@@ -145,15 +145,15 @@
     [NSLayoutConstraint activateConstraints:@[
         [_iconImageView.centerXAnchor constraintEqualToAnchor:self.centerXAnchor],
         [_iconImageView.topAnchor constraintEqualToAnchor:self.topAnchor],
-        [_iconImageView.widthAnchor constraintEqualToConstant:56],
-        [_iconImageView.heightAnchor constraintEqualToConstant:56],
+        [_iconImageView.widthAnchor constraintEqualToConstant:44],
+        [_iconImageView.heightAnchor constraintEqualToConstant:44],
 
         [_titleLabel.topAnchor constraintEqualToAnchor:_iconImageView.bottomAnchor constant:4],
         [_titleLabel.centerXAnchor constraintEqualToAnchor:self.centerXAnchor],
         [_titleLabel.leadingAnchor constraintEqualToAnchor:self.leadingAnchor],
         [_titleLabel.trailingAnchor constraintEqualToAnchor:self.trailingAnchor],
         [_titleLabel.bottomAnchor constraintEqualToAnchor:self.bottomAnchor],
-        [self.widthAnchor constraintGreaterThanOrEqualToConstant:56],
+        [self.widthAnchor constraintGreaterThanOrEqualToConstant:44],
     ]];
 }
 

@@ -64,5 +64,6 @@ jobs:
           name: ${{ github.ref_type == 'tag' && github.ref_name || format('Build {0}', steps.vars.outputs.sha_short) }}
           files: packages/*.deb
           generate_release_notes: true
+          make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
