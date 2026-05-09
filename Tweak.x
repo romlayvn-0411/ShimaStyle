@@ -333,7 +333,12 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
         if (self.view.window.windowScene) {
             orientation = self.view.window.windowScene.interfaceOrientation;
         } else {
-            orientation = [UIApplication sharedApplication].activeInterfaceOrientation;
+            for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
+                if ([scene isKindOfClass:[UIWindowScene class]] && scene.activationState == UISceneActivationStateForegroundActive) {
+                    orientation = ((UIWindowScene *)scene).interfaceOrientation;
+                    break;
+                }
+            }
         }
         
         switch (orientation) {
