@@ -54,6 +54,9 @@
 @interface SBNotificationBannerDestination : NSObject
 @end
 
+@interface BNBannerSource : NSObject
+@end
+
 @interface SBNCSystemApertureNotificationDestination : NSObject
 @end
 
@@ -664,20 +667,65 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
 // --- Chặn Banner mặc định của iOS khi ShimaStyle đang hoạt động trên màn hình chính ---
 
 %hook SBNCAlertingController
-- (BOOL)alertDispatcher:(id)arg1 shouldPresentAlertForRequest:(id)arg2 {
+- (BOOL)alertDispatcher:(id)arg1 shouldPresentAlertForNotificationRequest:(id)arg2 {
     DINPreferences *prefs = [DINPreferences sharedInstance];
     if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) {
         return NO; // Chặn Banner
     }
     return %orig;
 }
+- (void)alertDispatcher:(id)arg1 postAlertForNotificationRequest:(id)arg2 {
+    DINPreferences *prefs = [DINPreferences sharedInstance];
+    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) return;
+    %orig;
+}
 %end
 
 %hook NCNotificationBannerDestination
 - (BOOL)canReceiveNotificationRequest:(id)arg1 {
     DINPreferences *prefs = [DINPreferences sharedInstance];
+    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) return NO;
+    return %orig;
+}
+- (void)postNotificationRequest:(id)arg1 {
+    DINPreferences *prefs = [DINPreferences sharedInstance];
+    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) return;
+    %orig;
+}
+- (void)modifyNotificationRequest:(id)arg1 {
+    DINPreferences *prefs = [DINPreferences sharedInstance];
+    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) return;
+    %orig;
+}
+%end
+
+%hook SBNotificationBannerDestination
+- (BOOL)canReceiveNotificationRequest:(id)arg1 {
+    DINPreferences *prefs = [DINPreferences sharedInstance];
+    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) return NO;
+    return %orig;
+}
+- (void)postNotificationRequest:(id)arg1 {
+    DINPreferences *prefs = [DINPreferences sharedInstance];
+    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) return;
+    %orig;
+}
+- (void)modifyNotificationRequest:(id)arg1 {
+    DINPreferences *prefs = [DINPreferences sharedInstance];
+    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) return;
+    %orig;
+}
+%end
+
+// --- Ultimate Fail-safe chặn thông báo gốc thông qua BannerKit ---
+%hook BNBannerSource
+- (BOOL)postPresentable:(id)arg1 options:(id)arg2 userInfo:(id)arg3 error:(id *)arg4 {
+    DINPreferences *prefs = [DINPreferences sharedInstance];
     if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) {
-        return NO; // Chặn Banner
+        // Kiểm tra xem đối tượng chuẩn bị vẽ lên màn hình có phải là Thông báo không
+        if ([arg1 respondsToSelector:@selector(notificationRequest)]) {
+            return YES; // Giả vờ đã hiển thị thành công để hệ thống không báo lỗi
+        }
     }
     return %orig;
 }
