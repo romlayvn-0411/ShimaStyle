@@ -31,10 +31,20 @@ jobs:
           # Tải iOS SDKs (giải nén trực tiếp để tiết kiệm thời gian)
           curl -sL https://github.com/theos/sdks/archive/master.tar.gz | tar -x -z -C $THEOS/sdks --strip-components=1
 
+      - name: Get short SHA
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
       - name: Update Version in Control File
-        if: startsWith(github.ref, 'refs/tags/v')
         run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v}
+          else
+            FILE="control"
+            [ ! -f "control" ] && FILE="control.yaml"
+            BASE_VERSION=$(awk '/^Version:/ {print $2}' $FILE | sed 's/-.*//')
+            VERSION="${BASE_VERSION}-${{ steps.vars.outputs.sha_short }}"
+          fi
           echo "Updating version to $VERSION"
           if [ -f "control" ]; then
             sed -i '' "s/^Version:.*/Version: $VERSION/" control
@@ -45,16 +55,11 @@ jobs:
       - name: Build Tweak (Make Package)
         run: make package FINALPACKAGE=1
 
-      - name: Upload .deb Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ShimaStyle-Package
-          path: packages/*.deb
-
       - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || format('build-{0}', steps.vars.outputs.sha_short) }}
+          name: ${{ github.ref_type == 'tag' && github.ref_name || format('Build {0}', steps.vars.outputs.sha_short) }}
           files: packages/*.deb
           generate_release_notes: true
         env:

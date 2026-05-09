@@ -367,7 +367,7 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
 
         if (bgPath && dinIsVideoFile(bgPath)) {
             self.bgView = dinCreateVideoBgView(bgPath, prefs.backgroundOpacity);
-        } else if (bgPath) {
+        } else if (bgPath && [[NSFileManager defaultManager] fileExistsAtPath:bgPath]) {
             self.bgView = [[UIView alloc] init];
             self.bgView.translatesAutoresizingMaskIntoConstraints = NO;
             UIImage *bgImage = [UIImage imageWithContentsOfFile:bgPath];
@@ -597,7 +597,7 @@ static void *kDINBorderLayerKey = &kDINBorderLayerKey;
 
         if (bgPath && dinIsVideoFile(bgPath)) {
             customBg = dinCreateVideoBgView(bgPath, prefs.backgroundOpacity);
-        } else if (bgPath) {
+        } else if (bgPath && [[NSFileManager defaultManager] fileExistsAtPath:bgPath]) {
             customBg = [[UIView alloc] init];
             customBg.translatesAutoresizingMaskIntoConstraints = NO;
             customBg.clipsToBounds = YES;
