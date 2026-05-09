@@ -88,9 +88,13 @@ static BOOL dinShouldThrottle(void) {
 
 static BOOL dinIsDeviceLockedOrInCoverSheet(void) {
     BOOL isLocked = NO;
-    Class SBLockScreenManagerClass = objc_lookUpClass("SBLockScreenManager");
-    if (SBLockScreenManagerClass) {
-        id lockScreenManager = ((id (*)(Class, SEL))objc_msgSend)(SBLockScreenManagerClass, sel_registerName("sharedInstance"));
+    // Tối ưu hóa 1: Cache Class bằng dispatch_once để không tốn CPU tra cứu lại
+    static Class s_SBLockScreenManagerClass = nil;
+    static dispatch_once_t onceTokenLock;
+    dispatch_once(&onceTokenLock, ^{ s_SBLockScreenManagerClass = objc_lookUpClass("SBLockScreenManager"); });
+    
+    if (s_SBLockScreenManagerClass) {
+        id lockScreenManager = ((id (*)(Class, SEL))objc_msgSend)(s_SBLockScreenManagerClass, sel_registerName("sharedInstance"));
         if (lockScreenManager) {
             if ([lockScreenManager respondsToSelector:sel_registerName("isLockScreenVisible")] &&
                 ((BOOL (*)(id, SEL))objc_msgSend)(lockScreenManager, sel_registerName("isLockScreenVisible"))) {
@@ -219,6 +223,20 @@ static UIImage *dinPlaceholderIcon(NSString *appName) {
     return img;
 }
 
+// --- Helper: Tối ưu hóa 2: Cache hình nền tùy chỉnh để tránh đọc ổ cứng liên tục ---
+static UIImage *dinGetCachedCustomImage(NSString *path) {
+    if (!path) return nil;
+    static NSCache *sImageCache = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{ sImageCache = [[NSCache alloc] init]; });
+    UIImage *img = [sImageCache objectForKey:path];
+    if (!img) {
+        img = [UIImage imageWithContentsOfFile:path];
+        if (img) [sImageCache setObject:img forKey:path];
+    }
+    return img;
+}
+
 // ============================================================================
 // MARK: - Video Background Helper
 // ============================================================================
@@ -241,6 +259,8 @@ static BOOL dinIsVideoFile(NSString *path) {
     self.playerLayer.frame = self.bounds;
 }
 - (void)dealloc {
+    // Tối ưu hóa 3: Hủy bỏ vòng lặp Video để giải phóng RAM triệt để
+    [self.looper disableLooping];
     [self.player pause];
     self.player = nil;
     self.looper = nil;
@@ -546,7 +566,7 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
     } else if (bgPath && [[NSFileManager defaultManager] fileExistsAtPath:bgPath]) {
         self.bgView = [[UIView alloc] init];
         self.bgView.translatesAutoresizingMaskIntoConstraints = NO;
-        UIImage *bgImage = [UIImage imageWithContentsOfFile:bgPath];
+        UIImage *bgImage = dinGetCachedCustomImage(bgPath);
         if (bgImage) {
             UIImageView *iv = [[UIImageView alloc] initWithImage:bgImage];
             iv.contentMode = UIViewContentModeScaleAspectFill;
@@ -755,7 +775,12 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
     if (bundleIdentifier) {
         appName = [sAppNameCache objectForKey:bundleIdentifier];
         if (!appName) {
-            SBApplicationController *appController = [objc_lookUpClass("SBApplicationController") sharedInstance];
+            // Tối ưu hóa 1: Cache AppController Class
+            static Class s_SBAppControllerClass = nil;
+            static dispatch_once_t onceTokenApp;
+            dispatch_once(&onceTokenApp, ^{ s_SBAppControllerClass = objc_lookUpClass("SBApplicationController"); });
+            
+            SBApplicationController *appController = [s_SBAppControllerClass sharedInstance];
             if (appController) {
                 SBApplication *app = [appController applicationWithBundleIdentifier:bundleIdentifier];
                 if (app && [app respondsToSelector:@selector(displayName)]) appName = [app displayName];
@@ -936,7 +961,7 @@ static void *kDINBorderLayerKey = &kDINBorderLayerKey;
             customBg = [[UIView alloc] init];
             customBg.translatesAutoresizingMaskIntoConstraints = NO;
             customBg.clipsToBounds = YES;
-            UIImage *bgImage = [UIImage imageWithContentsOfFile:bgPath];
+            UIImage *bgImage = dinGetCachedCustomImage(bgPath);
             if (bgImage) {
                 UIImageView *iv = [[UIImageView alloc] initWithImage:bgImage];
                 iv.contentMode = UIViewContentModeScaleAspectFill;
