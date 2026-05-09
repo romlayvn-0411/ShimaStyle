@@ -592,7 +592,7 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
                                                  textColorStyle:textColorStyle];
     self.notifView.translatesAutoresizingMaskIntoConstraints = NO;
     self.notifView.alpha = 0;
-    self.notifView.transform = CGAffineTransformMakeScale(0.7, 0.7);
+    self.notifView.transform = CGAffineTransformMakeScale(0.5, 0.5);
     [self.containerView addSubview:self.notifView];
 
     // Layout dimensions per style
@@ -642,9 +642,9 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
     // Đã xóa hiệu ứng Haptic rung ở đây vì %orig sẽ tự động kích hoạt rung/chuông mặc định của iOS
 
     double animDuration = [DINPreferences sharedInstance].animationDuration;
-    // Spring expand animation - Tăng tốc độ bung mở để tạo cảm giác "Snappy"
+    // Spring expand animation - Hiệu ứng "giọt nước rơi" mượt mà, đàn hồi
     [UIView animateWithDuration:animDuration delay:0
-         usingSpringWithDamping:0.75 initialSpringVelocity:1.0
+         usingSpringWithDamping:0.6 initialSpringVelocity:0.8
                         options:UIViewAnimationOptionAllowUserInteraction
                      animations:^{
         self.containerView.alpha = 1.0;
@@ -680,12 +680,12 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
     // 1. Làm mờ (Fade out) phần văn bản/nội dung cực nhanh trước
     [UIView animateWithDuration:fadeOutTextDur delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^{
         self.notifView.alpha = 0;
-        self.notifView.transform = CGAffineTransformMakeScale(0.8, 0.8);
+        self.notifView.transform = CGAffineTransformMakeScale(0.6, 0.6);
     } completion:nil];
 
     // 2. Khung viền thu nhỏ lại thành viên thuốc (delay để chờ chữ mờ đi)
     [UIView animateWithDuration:shrinkDur delay:shrinkDelay
-     usingSpringWithDamping:0.75 initialSpringVelocity:0.8
+     usingSpringWithDamping:0.7 initialSpringVelocity:1.0
                     options:UIViewAnimationOptionCurveEaseInOut
                  animations:^{
         self.containerView.frame = pill;

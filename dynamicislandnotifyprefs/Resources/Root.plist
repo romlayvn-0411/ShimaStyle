@@ -4,17 +4,15 @@
 <dict>
     <key>items</key>
     <array>
-        <!-- Header -->
+        <!-- Kích hoạt chung -->
         <dict>
             <key>cell</key>
             <string>PSGroupCell</string>
             <key>label</key>
-            <string>ShimaStyle</string>
+            <string>Cấu hình chung</string>
             <key>footerText</key>
-            <string>Bắt buộc tất cả thông báo ứng dụng hiển thị qua Dynamic Island.</string>
+            <string>Bật/tắt Tweak và gửi thông báo thử nghiệm để xem trước giao diện.</string>
         </dict>
-
-        <!-- Enable Toggle -->
         <dict>
             <key>cell</key>
             <string>PSSwitchCell</string>
@@ -25,19 +23,29 @@
             <key>key</key>
             <string>enabled</string>
             <key>label</key>
-            <string>Bật Tweak</string>
+            <string>Kích hoạt ShimaStyle</string>
+            <key>PostNotification</key>
+            <string>com.34306.shimastyle/prefsChanged</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSButtonCell</string>
+            <key>label</key>
+            <string>Gửi thông báo thử nghiệm</string>
+            <key>action</key>
+            <string>testNotification</string>
         </dict>
 
-        <!-- Notification Section -->
+        <!-- Hành vi thông báo -->
         <dict>
             <key>cell</key>
             <string>PSGroupCell</string>
             <key>label</key>
-            <string>Thông báo</string>
+            <string>Hành vi &amp; Thời gian</string>
             <key>footerText</key>
-            <string>Khi được bật, các thông báo sẽ được hiển thị qua Dynamic Island và biểu ngữ thông báo mặc định sẽ bị ẩn.</string>
+            <string>Đóng sau (giây): Thời gian thông báo hiển thị trước khi tự ẩn.
+Tốc độ hoạt ảnh: Tốc độ bung mở và thu nhỏ khung (Mặc định: 0.45s).</string>
         </dict>
-
         <dict>
             <key>cell</key>
             <string>PSSwitchCell</string>
@@ -48,36 +56,10 @@
             <key>key</key>
             <string>notificationEnabled</string>
             <key>label</key>
-            <string>Thông báo Dynamic Island</string>
+            <string>Thay thế thông báo gốc</string>
             <key>PostNotification</key>
             <string>com.34306.shimastyle/prefsChanged</string>
         </dict>
-
-        <dict>
-            <key>cell</key>
-            <string>PSSegmentCell</string>
-            <key>default</key>
-            <integer>0</integer>
-            <key>defaults</key>
-            <string>com.34306.shimastyle</string>
-            <key>key</key>
-            <string>notificationStyle</string>
-            <key>validValues</key>
-            <array>
-                <integer>0</integer>
-                <integer>1</integer>
-                <integer>2</integer>
-            </array>
-            <key>validTitles</key>
-            <array>
-                <string>Tiêu chuẩn</string>
-                <string>Nhỏ gọn</string>
-                <string>Tối giản</string>
-            </array>
-            <key>PostNotification</key>
-            <string>com.34306.shimastyle/prefsChanged</string>
-        </dict>
-
         <dict>
             <key>cell</key>
             <string>PSSliderCell</string>
@@ -87,8 +69,6 @@
             <string>com.34306.shimastyle</string>
             <key>key</key>
             <string>dismissDuration</string>
-            <key>label</key>
-            <string>Đóng sau (giây)</string>
             <key>min</key>
             <real>1.0</real>
             <key>max</key>
@@ -98,17 +78,6 @@
             <key>PostNotification</key>
             <string>com.34306.shimastyle/prefsChanged</string>
         </dict>
-
-        <!-- Animation Speed Section -->
-        <dict>
-            <key>cell</key>
-            <string>PSGroupCell</string>
-            <key>label</key>
-            <string>Tốc độ hoạt ảnh</string>
-            <key>footerText</key>
-            <string>Thời gian để thông báo bung mở và thu nhỏ (Mặc định: 0.45s).</string>
-        </dict>
-
         <dict>
             <key>cell</key>
             <string>PSSliderCell</string>
@@ -128,25 +97,48 @@
             <string>com.34306.shimastyle/prefsChanged</string>
         </dict>
 
-        <dict>
-            <key>cell</key>
-            <string>PSButtonCell</string>
-            <key>label</key>
-            <string>Hiển thị thông báo thử nghiệm</string>
-            <key>action</key>
-            <string>testNotification</string>
-        </dict>
-
-        <!-- Offset Section -->
+        <!-- Giao diện hiển thị -->
         <dict>
             <key>cell</key>
             <string>PSGroupCell</string>
             <key>label</key>
-            <string>Vị trí dọc (Tai thỏ)</string>
+            <string>Giao diện &amp; Bố cục</string>
             <key>footerText</key>
-            <string>Tăng giá trị này để đẩy thông báo xuống thấp hơn nếu thiết bị của bạn có tai thỏ (Notch).</string>
+            <string>Vị trí dọc (Tai thỏ): Kéo thanh trượt để đẩy khung thông báo xuống thấp hơn tránh vướng tai thỏ nguyên bản của thiết bị.</string>
         </dict>
-
+        <dict>
+            <key>cell</key>
+            <string>PSSegmentCell</string>
+            <key>default</key>
+            <integer>0</integer>
+            <key>defaults</key>
+            <string>com.34306.shimastyle</string>
+            <key>key</key>
+            <string>notificationStyle</string>
+            <key>validValues</key>
+            <array> <integer>0</integer> <integer>1</integer> <integer>2</integer> </array>
+            <key>validTitles</key>
+            <array> <string>Tiêu chuẩn</string> <string>Nhỏ gọn</string> <string>Tối giản</string> </array>
+            <key>PostNotification</key>
+            <string>com.34306.shimastyle/prefsChanged</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <key>cell</key>
+            <string>PSSegmentCell</string>
+            <key>default</key>
+            <integer>0</integer>
+            <key>defaults</key>
+            <string>com.34306.shimastyle</string>
+            <key>key</key>
+            <string>textColorStyle</string>
+            <key>validValues</key>
+            <array> <integer>0</integer> <integer>1</integer> <integer>2</integer> </array>
+            <key>validTitles</key>
+            <array> <string>Chữ tự động</string> <string>Chữ sáng</string> <string>Chữ tối</string> </array>
+            <key>PostNotification</key>
+            <string>com.34306.shimastyle/prefsChanged</string>
+        </dict>
         <dict>
             <key>cell</key>
             <string>PSSliderCell</string>
@@ -166,16 +158,33 @@
             <string>com.34306.shimastyle/prefsChanged</string>
         </dict>
 
-        <!-- Custom Background Section -->
+        <!-- Nền & Độ mờ -->
         <dict>
             <key>cell</key>
             <string>PSGroupCell</string>
             <key>label</key>
-            <string>Hình nền tùy chỉnh</string>
+            <string>Màu nền &amp; Độ mờ</string>
             <key>footerText</key>
-            <string>Cung cấp đường dẫn đầy đủ đến hình ảnh/video nền trên thiết bị. Bỏ trống để sử dụng hiệu ứng kính mờ (Blur) tự động theo giao diện Sáng/Tối của hệ thống.</string>
+            <string>Độ mờ thứ 1 (Blur) được áp dụng khi bạn sử dụng nền hệ thống. Độ mờ thứ 2 được áp dụng khi bạn bật ảnh/video nền riêng.</string>
         </dict>
-
+        <dict>
+            <key>cell</key>
+            <string>PSSliderCell</string>
+            <key>default</key>
+            <real>1.0</real>
+            <key>defaults</key>
+            <string>com.34306.shimastyle</string>
+            <key>key</key>
+            <string>blurOpacity</string>
+            <key>min</key>
+            <real>0.0</real>
+            <key>max</key>
+            <real>1.0</real>
+            <key>showValue</key>
+            <true/>
+            <key>PostNotification</key>
+            <string>com.34306.shimastyle/prefsChanged</string>
+        </dict>
         <dict>
             <key>cell</key>
             <string>PSSwitchCell</string>
@@ -186,11 +195,10 @@
             <key>key</key>
             <string>customBackgroundEnabled</string>
             <key>label</key>
-            <string>Bật hình nền tùy chỉnh</string>
+            <string>Sử dụng ảnh nền riêng</string>
             <key>PostNotification</key>
             <string>com.34306.shimastyle/prefsChanged</string>
         </dict>
-
         <dict>
             <key>cell</key>
             <string>PSEditTextCell</string>
@@ -199,44 +207,12 @@
             <key>key</key>
             <string>customBackgroundImagePath</string>
             <key>label</key>
-            <string>Đường dẫn hình nền</string>
+            <string>Đường dẫn:</string>
             <key>placeholder</key>
-            <string>/var/jb/Library/DINBackground.png</string>
+            <string>/var/jb/Library/DINBg.png</string>
             <key>PostNotification</key>
             <string>com.34306.shimastyle/prefsChanged</string>
         </dict>
-
-        <dict>
-            <key>cell</key>
-            <string>PSSliderCell</string>
-            <key>default</key>
-            <real>1.0</real>
-            <key>defaults</key>
-            <string>com.34306.shimastyle</string>
-            <key>key</key>
-            <string>blurOpacity</string>
-            <key>label</key>
-            <string>Độ mờ (Hiệu ứng kính/Blur)</string>
-            <key>min</key>
-            <real>0.0</real>
-            <key>max</key>
-            <real>1.0</real>
-            <key>showValue</key>
-            <true/>
-            <key>PostNotification</key>
-            <string>com.34306.shimastyle/prefsChanged</string>
-        </dict>
-
-        <!-- Opacity Section -->
-        <dict>
-            <key>cell</key>
-            <string>PSGroupCell</string>
-            <key>label</key>
-            <string>Điều chỉnh độ mờ (Opacity)</string>
-            <key>footerText</key>
-            <string>Độ mờ kính (Blur) được áp dụng khi bạn không dùng hình nền. Độ mờ ảnh/video được áp dụng khi bạn bật sử dụng hình nền tùy chỉnh.</string>
-        </dict>
-
         <dict>
             <key>cell</key>
             <string>PSSliderCell</string>
@@ -246,8 +222,6 @@
             <string>com.34306.shimastyle</string>
             <key>key</key>
             <string>backgroundOpacity</string>
-            <key>label</key>
-            <string>Độ mờ (Ảnh/Video nền)</string>
             <key>min</key>
             <real>0.0</real>
             <key>max</key>
@@ -258,46 +232,20 @@
             <string>com.34306.shimastyle/prefsChanged</string>
         </dict>
 
-        <!-- Text Color Section -->
+        <!-- Hệ thống -->
         <dict>
             <key>cell</key>
             <string>PSGroupCell</string>
             <key>label</key>
-            <string>Màu sắc văn bản</string>
+            <string>Hệ thống</string>
             <key>footerText</key>
-            <string>Điều chỉnh màu chữ để dễ đọc hơn khi sử dụng hình nền tùy chỉnh.</string>
+            <string>Cần khởi động lại để các thay đổi liên quan đến hình nền tuỳ chỉnh được áp dụng.</string>
         </dict>
-
-        <dict>
-            <key>cell</key>
-            <string>PSSegmentCell</string>
-            <key>default</key>
-            <integer>0</integer>
-            <key>defaults</key>
-            <string>com.34306.shimastyle</string>
-            <key>key</key>
-            <string>textColorStyle</string>
-            <key>validValues</key>
-            <array> <integer>0</integer> <integer>1</integer> <integer>2</integer> </array>
-            <key>validTitles</key>
-            <array> <string>Tự động</string> <string>Sáng (Trắng)</string> <string>Tối (Đen)</string> </array>
-            <key>PostNotification</key>
-            <string>com.34306.shimastyle/prefsChanged</string>
-        </dict>
-
-        <!-- Respring Button -->
-        <dict>
-            <key>cell</key>
-            <string>PSGroupCell</string>
-            <key>footerText</key>
-            <string>Cần respring để các thay đổi về hình nền có hiệu lực.</string>
-        </dict>
-
         <dict>
             <key>cell</key>
             <string>PSButtonCell</string>
             <key>label</key>
-            <string>Khởi động lại (Respring)</string>
+            <string>Khởi động lại SpringBoard</string>
             <key>action</key>
             <string>respring</string>
         </dict>
