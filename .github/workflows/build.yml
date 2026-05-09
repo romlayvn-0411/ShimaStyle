@@ -16,6 +16,8 @@ jobs:
   build:
     name: Build .deb Package
     runs-on: macos-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout Source Code
