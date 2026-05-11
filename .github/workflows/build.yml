@@ -35,10 +35,6 @@ jobs:
           # Tải iOS SDKs (giải nén trực tiếp để tiết kiệm thời gian)
           curl -sL https://github.com/theos/sdks/archive/master.tar.gz | tar -x -z -C $THEOS/sdks --strip-components=1
 
-      - name: Get short SHA
-        id: vars
-        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-
       - name: Update Version in Control File
         id: version
         run: |
@@ -48,7 +44,7 @@ jobs:
             FILE="control"
             [ ! -f "control" ] && FILE="control.yaml"
             BASE_VERSION=$(awk '/^Version:/ {print $2}' $FILE | sed 's/-.*//')
-            VERSION="${BASE_VERSION}-${{ steps.vars.outputs.sha_short }}"
+            VERSION="${BASE_VERSION}"
           fi
           echo "Updating version to $VERSION"
           echo "pkg_version=$VERSION" >> $GITHUB_OUTPUT
@@ -71,6 +67,12 @@ jobs:
           echo "" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
+      - name: Delete Existing Release (Tránh trùng lặp Tag)
+        run: |
+          gh release delete v${{ steps.version.outputs.pkg_version }} --cleanup-tag -y || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -80,5 +82,13 @@ jobs:
           files: packages/*.deb
           generate_release_notes: true
           make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Delete Older Releases (Chỉ giữ 1 bản mới nhất)
+        uses: dev-drprasad/delete-older-releases@v0.3.3
+        with:
+          keep_latest: 1
+          delete_tags: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

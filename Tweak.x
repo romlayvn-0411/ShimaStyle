@@ -20,6 +20,7 @@
 - (NSString *)title;
 - (NSString *)subtitle;
 - (NSString *)message;
+- (UIImage *)icon;
 @end
 
 @interface NCNotificationRequest : NSObject
@@ -148,7 +149,15 @@ static UIImage *dinAppIcon(NSString *bundleIdentifier) {
         SEL iconSel = sel_registerName("_applicationIconImageForBundleIdentifier:format:scale:");
         if ([UIImage respondsToSelector:iconSel]) {
             foundIcon = ((id (*)(Class, SEL, id, int, CGFloat))objc_msgSend)(
-                [UIImage class], iconSel, bundleIdentifier, 2, UIScreen.mainScreen.scale);
+                [UIImage class], iconSel, bundleIdentifier, 1, UIScreen.mainScreen.scale);
+            if (!foundIcon) {
+                foundIcon = ((id (*)(Class, SEL, id, int, CGFloat))objc_msgSend)(
+                    [UIImage class], iconSel, bundleIdentifier, 2, UIScreen.mainScreen.scale);
+            }
+            if (!foundIcon) {
+                foundIcon = ((id (*)(Class, SEL, id, int, CGFloat))objc_msgSend)(
+                    [UIImage class], iconSel, bundleIdentifier, 0, UIScreen.mainScreen.scale);
+            }
         }
     } @catch (NSException *e) {}
 
@@ -486,7 +495,7 @@ static void dinReloadLandscapeOffsets() {
     NSInteger style = [DINPreferences sharedInstance].notificationStyle;
     switch (style) {
         case 1: expandedWidth = 220.0; expandedHeight = 56.0; break;
-        case 2: expandedWidth = 120.0; expandedHeight = 80.0; break;
+        case 2: expandedWidth = 120.0; expandedHeight = 64.0; break;
         default: expandedWidth = 320.0; expandedHeight = 72.0; break;
     }
     
@@ -687,7 +696,7 @@ static void dinReloadLandscapeOffsets() {
             break;
         case 2: // Minimal
             expandedWidth = 120.0;
-            expandedHeight = 80.0;
+            expandedHeight = 64.0;
             centerYOffset = 0.0;
             break;
         default: // Standard
@@ -852,8 +861,18 @@ static void dinReloadLandscapeOffsets() {
         }
     }
 
-    UIImage *icon = dinAppIcon(bundleIdentifier);
-    if (!icon) icon = dinPlaceholderIcon(appName);
+    UIImage *icon = nil;
+    if ([content respondsToSelector:@selector(icon)]) {
+        icon = [content icon]; // Ưu tiên lấy Icon chính chủ của thông báo (Hỗ trợ cực tốt Ứng dụng hệ thống & Avatar)
+    }
+    
+    if (!icon) {
+        icon = dinAppIcon(bundleIdentifier);
+    }
+    
+    if (!icon) {
+        icon = dinPlaceholderIcon(appName);
+    }
 
     // Do NOT call %orig — fully suppress system notification (banner + notification center)
     // Show DI overlay instead

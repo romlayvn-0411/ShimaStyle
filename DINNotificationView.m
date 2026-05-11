@@ -207,7 +207,7 @@
                            icon:(UIImage *)icon {
     _iconImageView = [[UIImageView alloc] init];
     _iconImageView.contentMode = UIViewContentModeScaleAspectFill;
-    _iconImageView.layer.cornerRadius = 22; // Bo tròn hoàn hảo (size 44)
+    _iconImageView.layer.cornerRadius = 16; // Bo tròn hoàn hảo (size 32)
     _iconImageView.layer.cornerCurve = kCACornerCurveContinuous;
     _iconImageView.clipsToBounds = YES;
     _iconImageView.image = icon;
@@ -228,15 +228,15 @@
     [NSLayoutConstraint activateConstraints:@[
         [_iconImageView.centerXAnchor constraintEqualToAnchor:self.centerXAnchor],
         [_iconImageView.topAnchor constraintEqualToAnchor:self.topAnchor],
-        [_iconImageView.widthAnchor constraintEqualToConstant:44],
-        [_iconImageView.heightAnchor constraintEqualToConstant:44],
+        [_iconImageView.widthAnchor constraintEqualToConstant:32],
+        [_iconImageView.heightAnchor constraintEqualToConstant:32],
 
         [_titleLabel.topAnchor constraintEqualToAnchor:_iconImageView.bottomAnchor constant:4],
         [_titleLabel.centerXAnchor constraintEqualToAnchor:self.centerXAnchor],
         [_titleLabel.leadingAnchor constraintEqualToAnchor:self.leadingAnchor],
         [_titleLabel.trailingAnchor constraintEqualToAnchor:self.trailingAnchor],
         [_titleLabel.bottomAnchor constraintEqualToAnchor:self.bottomAnchor],
-        [self.widthAnchor constraintGreaterThanOrEqualToConstant:44],
+        [self.widthAnchor constraintGreaterThanOrEqualToConstant:32],
     ]];
 }
 
