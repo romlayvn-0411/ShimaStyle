@@ -43,12 +43,6 @@
 - (SBApplication *)applicationWithBundleIdentifier:(NSString *)bundleIdentifier;
 @end
 
-@interface LSApplicationProxy : NSObject
-+ (instancetype)applicationProxyForIdentifier:(NSString *)identifier;
-- (NSString *)localizedName;
-- (NSURL *)bundleURL;
-@end
-
 @interface SBSystemApertureContainerView : UIView
 @end
 
@@ -145,24 +139,55 @@ static UIImage *dinAppIcon(NSString *bundleIdentifier) {
 
     UIImage *foundIcon = nil;
 
-    // Method 1: UIImage private API (most reliable)
+    // Method 1: SBIconController (Nhanh nhất & Tối ưu RAM vì đọc trực tiếp trên bộ nhớ SpringBoard)
     @try {
-        SEL iconSel = sel_registerName("_applicationIconImageForBundleIdentifier:format:scale:");
-        if ([UIImage respondsToSelector:iconSel]) {
-            foundIcon = ((id (*)(Class, SEL, id, int, CGFloat))objc_msgSend)(
-                [UIImage class], iconSel, bundleIdentifier, 1, UIScreen.mainScreen.scale);
-            if (!foundIcon) {
-                foundIcon = ((id (*)(Class, SEL, id, int, CGFloat))objc_msgSend)(
-                    [UIImage class], iconSel, bundleIdentifier, 2, UIScreen.mainScreen.scale);
-            }
-            if (!foundIcon) {
-                foundIcon = ((id (*)(Class, SEL, id, int, CGFloat))objc_msgSend)(
-                    [UIImage class], iconSel, bundleIdentifier, 0, UIScreen.mainScreen.scale);
+        Class iconControllerClass = objc_lookUpClass("SBIconController");
+        if (iconControllerClass) {
+            id iconController = ((id (*)(Class, SEL))objc_msgSend)(iconControllerClass, sel_registerName("sharedInstance"));
+            if (iconController) {
+                id iconManager = nil;
+                if ([iconController respondsToSelector:sel_registerName("iconManager")]) {
+                    iconManager = ((id (*)(id, SEL))objc_msgSend)(iconController, sel_registerName("iconManager"));
+                }
+                id model = nil;
+                if (iconManager && [iconManager respondsToSelector:sel_registerName("iconModel")]) {
+                    model = ((id (*)(id, SEL))objc_msgSend)(iconManager, sel_registerName("iconModel"));
+                } else if ([iconController respondsToSelector:sel_registerName("model")]) {
+                    model = ((id (*)(id, SEL))objc_msgSend)(iconController, sel_registerName("model"));
+                }
+                
+                if (model) {
+                    id icon = ((id (*)(id, SEL, id))objc_msgSend)(model, sel_registerName("applicationIconForBundleIdentifier:"), bundleIdentifier);
+                    if (icon && [icon respondsToSelector:sel_registerName("getIconImage:")]) {
+                        foundIcon = ((id (*)(id, SEL, int))objc_msgSend)(icon, sel_registerName("getIconImage:"), 2);
+                    } else if (icon && [icon respondsToSelector:sel_registerName("generateIconImage:")]) {
+                        foundIcon = ((id (*)(id, SEL, int))objc_msgSend)(icon, sel_registerName("generateIconImage:"), 2);
+                    }
+                }
             }
         }
     } @catch (NSException *e) {}
 
-    // Method 2: IconServices (Chuyên trị Ứng dụng Hệ thống trên iOS 14+)
+    // Method 2: UIImage private API
+    if (!foundIcon) {
+        @try {
+            SEL iconSel = sel_registerName("_applicationIconImageForBundleIdentifier:format:scale:");
+            if ([UIImage respondsToSelector:iconSel]) {
+                foundIcon = ((id (*)(Class, SEL, id, int, CGFloat))objc_msgSend)(
+                    [UIImage class], iconSel, bundleIdentifier, 1, UIScreen.mainScreen.scale);
+                if (!foundIcon) {
+                    foundIcon = ((id (*)(Class, SEL, id, int, CGFloat))objc_msgSend)(
+                        [UIImage class], iconSel, bundleIdentifier, 2, UIScreen.mainScreen.scale);
+                }
+                if (!foundIcon) {
+                    foundIcon = ((id (*)(Class, SEL, id, int, CGFloat))objc_msgSend)(
+                        [UIImage class], iconSel, bundleIdentifier, 0, UIScreen.mainScreen.scale);
+                }
+            }
+        } @catch (NSException *e) {}
+    }
+
+    // Method 3: IconServices (Chuyên trị Ứng dụng Hệ thống, nhưng XPC call khá chậm)
     if (!foundIcon) {
         @try {
             Class isIconClass = objc_lookUpClass("ISIcon");
@@ -182,55 +207,6 @@ static UIImage *dinAppIcon(NSString *bundleIdentifier) {
                     }
                 }
             }
-        } @catch (NSException *e) {}
-    }
-
-    // Method 3: SBIconController → SBIconModel (Chuẩn iOS 16+)
-    if (!foundIcon) {
-        @try {
-            Class iconControllerClass = objc_lookUpClass("SBIconController");
-            if (iconControllerClass) {
-                id iconController = ((id (*)(Class, SEL))objc_msgSend)(iconControllerClass, sel_registerName("sharedInstance"));
-                if (iconController) {
-                    id iconManager = nil;
-                    if ([iconController respondsToSelector:sel_registerName("iconManager")]) {
-                        iconManager = ((id (*)(id, SEL))objc_msgSend)(iconController, sel_registerName("iconManager"));
-                    }
-                    id model = nil;
-                    if (iconManager && [iconManager respondsToSelector:sel_registerName("iconModel")]) {
-                        model = ((id (*)(id, SEL))objc_msgSend)(iconManager, sel_registerName("iconModel"));
-                    } else if ([iconController respondsToSelector:sel_registerName("model")]) {
-                        model = ((id (*)(id, SEL))objc_msgSend)(iconController, sel_registerName("model"));
-                    }
-                    
-                    if (model) {
-                        id icon = ((id (*)(id, SEL, id))objc_msgSend)(model, sel_registerName("applicationIconForBundleIdentifier:"), bundleIdentifier);
-                        if (icon && [icon respondsToSelector:sel_registerName("getIconImage:")]) {
-                            foundIcon = ((id (*)(id, SEL, int))objc_msgSend)(icon, sel_registerName("getIconImage:"), 2);
-                        } else if (icon && [icon respondsToSelector:sel_registerName("generateIconImage:")]) {
-                            foundIcon = ((id (*)(id, SEL, int))objc_msgSend)(icon, sel_registerName("generateIconImage:"), 2);
-                        }
-                    }
-                }
-            }
-        } @catch (NSException *e) {}
-    }
-
-    // Method 4: Load from app bundle
-    if (!foundIcon) {
-        @try {
-        LSApplicationProxy *proxy = [LSApplicationProxy applicationProxyForIdentifier:bundleIdentifier];
-        if (proxy) {
-            NSURL *bundleURL = [proxy bundleURL];
-            if (bundleURL) {
-                for (NSString *iconName in @[@"AppIcon60x60@2x.png", @"AppIcon60x60@3x.png",
-                        @"AppIcon76x76@2x.png", @"Icon-60@2x.png", @"Icon-60@3x.png"]) {
-                        UIImage *img = [UIImage imageWithContentsOfFile:
-                        [[bundleURL path] stringByAppendingPathComponent:iconName]];
-                        if (img) { foundIcon = img; break; }
-                }
-            }
-        }
         } @catch (NSException *e) {}
     }
 
@@ -804,7 +780,7 @@ static void dinReloadLandscapeOffsets() {
     double animDuration = [DINPreferences sharedInstance].animationDuration;
     // Spring expand animation - Hiệu ứng "giọt nước rơi" mượt mà, đàn hồi
     [UIView animateWithDuration:animDuration delay:0
-         usingSpringWithDamping:0.6 initialSpringVelocity:0.8
+         usingSpringWithDamping:0.65 initialSpringVelocity:1.2
                         options:UIViewAnimationOptionAllowUserInteraction
                      animations:^{
         self.containerView.alpha = 1.0;
@@ -885,79 +861,56 @@ static void dinReloadLandscapeOffsets() {
         return;
     }
 
-    // 3. Nếu đang ở màn hình khóa hoặc đang kéo thanh thông báo, nhường quyền cho iOS hiển thị Banner gốc
-    if (dinIsDeviceLockedOrInCoverSheet()) {
-        return;
-    }
-
-    // 4. Bắt đầu hiển thị giao diện ShimaStyle
-    NCNotificationContent *content = [request content];
-    if (!content) return;
-
-    NSString *title = [content title];
-    NSString *message = [content message];
-    if (!title && !message) return;
-
     if (dinShouldThrottle()) {
-        // Suppress entirely when throttled
         return;
     }
     sLastNotificationTime = [NSDate date];
 
-    NSString *bundleIdentifier = [request sectionIdentifier];
-    NSString *appName = nil;
-
-    // --- Fix: Lưu Cache tên ứng dụng để tránh Delay ---
-    static NSCache *sAppNameCache = nil;
-    static dispatch_once_t onceTokenName;
-    dispatch_once(&onceTokenName, ^{ sAppNameCache = [[NSCache alloc] init]; });
-
-    if (bundleIdentifier) {
-        appName = [sAppNameCache objectForKey:bundleIdentifier];
-        if (!appName) {
-            // Tối ưu hóa 1: Cache AppController Class
-            static Class s_SBAppControllerClass = nil;
-            static dispatch_once_t onceTokenApp;
-            dispatch_once(&onceTokenApp, ^{ s_SBAppControllerClass = objc_lookUpClass("SBApplicationController"); });
-            
-            SBApplicationController *appController = [s_SBAppControllerClass sharedInstance];
-            if (appController) {
-                SBApplication *app = [appController applicationWithBundleIdentifier:bundleIdentifier];
-                if (app && [app respondsToSelector:@selector(displayName)]) appName = [app displayName];
-            }
+    // Đẩy toàn bộ quá trình đọc dữ liệu và vẽ UI sang Main Thread để tránh Thread Blocking (gây trễ thông báo)
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (dinIsDeviceLockedOrInCoverSheet()) return;
+        
+        NCNotificationContent *content = [request content];
+        if (!content) return;
+        
+        NSString *title = [content title];
+        NSString *message = [content message];
+        if (!title && !message) return;
+        
+        NSString *bundleIdentifier = [request sectionIdentifier];
+        NSString *appName = nil;
+        
+        static NSCache *sAppNameCache = nil;
+        static dispatch_once_t onceTokenName;
+        dispatch_once(&onceTokenName, ^{ sAppNameCache = [[NSCache alloc] init]; });
+        
+        if (bundleIdentifier) {
+            appName = [sAppNameCache objectForKey:bundleIdentifier];
             if (!appName) {
-                LSApplicationProxy *proxy = [LSApplicationProxy applicationProxyForIdentifier:bundleIdentifier];
-                if (proxy) appName = [proxy localizedName];
+                static Class s_SBAppControllerClass = nil;
+                static dispatch_once_t onceTokenApp;
+                dispatch_once(&onceTokenApp, ^{ s_SBAppControllerClass = objc_lookUpClass("SBApplicationController"); });
+                
+                SBApplicationController *appController = [s_SBAppControllerClass sharedInstance];
+                if (appController) {
+                    SBApplication *app = [appController applicationWithBundleIdentifier:bundleIdentifier];
+                    if (app && [app respondsToSelector:@selector(displayName)]) appName = [app displayName];
+                }
+                if (appName) [sAppNameCache setObject:appName forKey:bundleIdentifier];
             }
-            if (appName) [sAppNameCache setObject:appName forKey:bundleIdentifier];
         }
-    }
-
-    UIImage *icon = nil;
-    if ([content respondsToSelector:@selector(icon)]) {
-        icon = [content icon]; // Ưu tiên lấy Icon chính chủ của thông báo (Hỗ trợ cực tốt Ứng dụng hệ thống & Avatar)
-    }
-    
-    if (!icon) {
-        icon = dinAppIcon(bundleIdentifier);
-    }
-    
-    if (!icon) {
-        icon = dinPlaceholderIcon(appName);
-    }
-
-    // Do NOT call %orig — fully suppress system notification (banner + notification center)
-    // Show DI overlay instead
-    dispatch_block_t showBlock = ^{
+        
+        UIImage *icon = nil;
+        if ([content respondsToSelector:@selector(icon)]) {
+            icon = [content icon];
+        }
+        if (!icon) icon = dinAppIcon(bundleIdentifier);
+        if (!icon) icon = dinPlaceholderIcon(appName);
+        
         [[DINOverlayManager sharedInstance] showWithTitle:title message:message
                                                   appName:appName icon:icon
                                          bundleIdentifier:bundleIdentifier];
-    };
-    if ([NSThread isMainThread]) {
-        showBlock(); // Nếu đang ở luồng chính thì hiển thị ngay lập tức không cần chờ
-    } else {
-        dispatch_async(dispatch_get_main_queue(), showBlock);
-    }
+    });
 }
 
 %end
