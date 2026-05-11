@@ -185,6 +185,58 @@
             <string>com.34306.shimastyle/prefsChanged</string>
         </dict>
 
+        <!-- VỊ TRÍ CHẾ ĐỘ NGANG (LANDSCAPE OFFSET) -->
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>label</key>
+            <string>Vị trí ngang: Trục X (Trái / Phải)</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSliderCell</string>
+            <key>default</key>
+            <real>0.0</real>
+            <key>defaults</key>
+            <string>com.34306.shimastyle</string>
+            <key>key</key>
+            <string>landscapeXOffset</string>
+            <key>min</key>
+            <real>-100.0</real>
+            <key>max</key>
+            <real>100.0</real>
+            <key>showValue</key>
+            <true/>
+            <key>PostNotification</key>
+            <string>com.34306.shimastyle/prefsChanged</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>label</key>
+            <string>Vị trí ngang: Trục Y (Lên / Xuống)</string>
+            <key>footerText</key>
+            <string>Căn chỉnh vị trí thông báo khi thiết bị đang xoay ngang. Mặc định khung sẽ tự bám sát vào góc tai thỏ/Camera để không che khuất màn hình.</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSliderCell</string>
+            <key>default</key>
+            <real>0.0</real>
+            <key>defaults</key>
+            <string>com.34306.shimastyle</string>
+            <key>key</key>
+            <string>landscapeYOffset</string>
+            <key>min</key>
+            <real>0.0</real>
+            <key>max</key>
+            <real>150.0</real>
+            <key>showValue</key>
+            <true/>
+            <key>PostNotification</key>
+            <string>com.34306.shimastyle/prefsChanged</string>
+        </dict>
+
         <!-- NỀN (BACKGROUND) -->
         <dict>
             <key>cell</key>

@@ -324,6 +324,22 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
 }
 
 // ============================================================================
+// MARK: - Landscape Offset Preferences Cache
+// ============================================================================
+
+static CGFloat sLandscapeXOffset = 0.0;
+static CGFloat sLandscapeYOffset = 0.0;
+
+static void dinReloadLandscapeOffsets() {
+    CFPreferencesAppSynchronize((CFStringRef)@"com.34306.shimastyle");
+    NSNumber *xVal = (NSNumber *)CFBridgingRelease(CFPreferencesCopyAppValue((CFStringRef)@"landscapeXOffset", (CFStringRef)@"com.34306.shimastyle"));
+    sLandscapeXOffset = xVal ? [xVal floatValue] : 0.0;
+    
+    NSNumber *yVal = (NSNumber *)CFBridgingRelease(CFPreferencesCopyAppValue((CFStringRef)@"landscapeYOffset", (CFStringRef)@"com.34306.shimastyle"));
+    sLandscapeYOffset = yVal ? [yVal floatValue] : 0.0;
+}
+
+// ============================================================================
 // MARK: - Pass-through Views
 // ============================================================================
 
@@ -345,6 +361,7 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
      bundleIdentifier:(NSString *)bundleIdentifier;
 - (void)dismiss;
 - (void)openAppAndDismiss;
+- (CGRect)calculateFrameForWidth:(CGFloat)width height:(CGFloat)height size:(CGSize)size;
 @end
 
 @interface DINPassthroughView : UIView
@@ -422,24 +439,46 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
     return instance;
 }
 
+- (CGRect)calculateFrameForWidth:(CGFloat)width height:(CGFloat)height size:(CGSize)size {
+    BOOL isLandscape = size.width > size.height;
+    CGFloat yOffset = isLandscape ? sLandscapeYOffset : [DINPreferences sharedInstance].notificationYOffset;
+    CGFloat xOffset = isLandscape ? sLandscapeXOffset : 0.0;
+    
+    CGFloat x = (size.width - width) / 2.0; // Default Center (Chế độ dọc)
+    
+    if (isLandscape) {
+        UIInterfaceOrientation orientation = dinGetActiveOrientation();
+        if (orientation == UIInterfaceOrientationLandscapeRight) {
+            // Nút Home bên Phải -> Tai thỏ nằm ở mép Trái
+            x = 16.0;
+        } else if (orientation == UIInterfaceOrientationLandscapeLeft) {
+            // Nút Home bên Trái -> Tai thỏ nằm ở mép Phải
+            x = size.width - width - 16.0;
+        } else {
+            x = 16.0;
+        }
+    }
+    
+    x += xOffset;
+    
+    return CGRectMake(x, 11.0 + yOffset, width, height);
+}
+
 - (CGRect)pillFrame {
-    CGFloat screenWidth = self.window ? self.window.bounds.size.width : UIScreen.mainScreen.bounds.size.width;
-    CGFloat yOffset = [DINPreferences sharedInstance].notificationYOffset;
-    return CGRectMake((screenWidth - 126.0) / 2.0, 11.0 + yOffset, 126.0, 37.33);
+    CGSize size = self.window ? self.window.bounds.size : UIScreen.mainScreen.bounds.size;
+    return [self calculateFrameForWidth:126.0 height:37.33 size:size];
 }
 
 - (CGRect)expandedFrameForWidth:(CGFloat)width height:(CGFloat)height {
-    CGFloat screenWidth = self.window ? self.window.bounds.size.width : UIScreen.mainScreen.bounds.size.width;
-    CGFloat yOffset = [DINPreferences sharedInstance].notificationYOffset;
-    CGFloat w = MIN(width, screenWidth - 16.0);
+    CGSize size = self.window ? self.window.bounds.size : UIScreen.mainScreen.bounds.size;
+    CGFloat w = MIN(width, size.width - 16.0);
     CGFloat h = MAX(44.0, MIN(height, 160.0));
-    return CGRectMake((screenWidth - w) / 2.0, 11.0 + yOffset, w, h);
+    return [self calculateFrameForWidth:w height:h size:size];
 }
 
 - (void)updateLayoutForNewSize:(CGSize)size {
     if (!self.showing) {
-        CGFloat yOffset = [DINPreferences sharedInstance].notificationYOffset;
-        self.containerView.frame = CGRectMake((size.width - 126.0) / 2.0, 11.0 + yOffset, 126.0, 37.33);
+        self.containerView.frame = [self calculateFrameForWidth:126.0 height:37.33 size:size];
         return;
     }
     
@@ -451,10 +490,9 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
         default: expandedWidth = 320.0; expandedHeight = 72.0; break;
     }
     
-    CGFloat yOffset = [DINPreferences sharedInstance].notificationYOffset;
     CGFloat w = MIN(expandedWidth, size.width - 16.0);
     CGFloat h = MAX(44.0, MIN(expandedHeight, 160.0));
-    CGRect expandedFrame = CGRectMake((size.width - w) / 2.0, 11.0 + yOffset, w, h);
+    CGRect expandedFrame = [self calculateFrameForWidth:w height:h size:size];
     
     [UIView animateWithDuration:0.3 delay:0 options:UIViewAnimationOptionCurveEaseInOut animations:^{
         self.containerView.frame = expandedFrame;
@@ -1064,11 +1102,13 @@ static void *kDINBorderLayerKey = &kDINBorderLayerKey;
 
 %ctor {
     [[DINPreferences sharedInstance] reloadPreferences];
+    dinReloadLandscapeOffsets();
 
     int token = 0;
     notify_register_dispatch("com.34306.shimastyle/prefsChanged",
         &token, dispatch_get_main_queue(), ^(int t) {
             [[DINPreferences sharedInstance] reloadPreferences];
+            dinReloadLandscapeOffsets();
         });
 
     int testToken = 0;
