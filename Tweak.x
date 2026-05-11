@@ -908,6 +908,9 @@ static void dinReloadLandscapeOffsets() {
 
     dispatch_block_t showBlock = ^{
         
+        NSString *title = [content respondsToSelector:@selector(title)] ? [content title] : nil;
+        NSString *message = [content respondsToSelector:@selector(message)] ? [content message] : nil;
+        
         NSString *finalTitle = title;
         NSString *finalMessage = message;
 
@@ -1050,7 +1053,11 @@ static void dinReloadLandscapeOffsets() {
 
     @try {
         // Chỉ xử lý PushKit của Telegram
-        NSString *bundleIdentifier = [self.delegate bundleIdentifier];
+        id delegate = [(id)self delegate];
+        NSString *bundleIdentifier = nil;
+        if ([delegate respondsToSelector:@selector(bundleIdentifier)]) {
+            bundleIdentifier = [delegate performSelector:@selector(bundleIdentifier)];
+        }
         if (![bundleIdentifier isEqualToString:@"ph.telegra.Telegraph"]) {
             return;
         }
