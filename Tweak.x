@@ -498,10 +498,15 @@ static void dinReloadLandscapeOffsets() {
         case 2: expandedWidth = 120.0; expandedHeight = 64.0; break;
         default: {
             expandedHeight = 72.0; // Khoá cố định chiều cao
-            CGFloat titleW = [self.notifView.titleLabel intrinsicContentSize].width;
-            CGFloat msgW = [self.notifView.messageLabel intrinsicContentSize].width;
-            CGFloat desiredWidth = MAX(240.0, MAX(titleW, msgW) + 68.0); // Tính toán độ dài chuẩn xác dựa trên số lượng chữ
-            expandedWidth = MIN(desiredWidth, size.width - 16.0); // Không vượt quá 2 mép màn hình
+            BOOL isLandscape = size.width > size.height;
+            if (isLandscape) {
+                expandedWidth = 320.0; // Giữ nguyên kích thước 320pt khi xoay ngang
+            } else {
+                CGFloat titleW = [self.notifView.titleLabel intrinsicContentSize].width;
+                CGFloat msgW = [self.notifView.messageLabel intrinsicContentSize].width;
+                CGFloat desiredWidth = MAX(240.0, MAX(titleW, msgW) + 68.0); // Tính toán độ dài chuẩn xác dựa trên số lượng chữ
+                expandedWidth = MIN(desiredWidth, size.width - 16.0); // Không vượt quá 2 mép màn hình
+            }
             break;
         }
     }
@@ -611,10 +616,16 @@ static void dinReloadLandscapeOffsets() {
             // Tự động co giãn chiều dài khung (Chỉ dành cho chế độ Tiêu chuẩn)
             DINPreferences *prefs = [DINPreferences sharedInstance];
             if (prefs.notificationStyle == 0) {
-                CGFloat titleW = [self.notifView.titleLabel intrinsicContentSize].width;
-                CGFloat msgW = [self.notifView.messageLabel intrinsicContentSize].width;
-                CGFloat desiredWidth = MAX(240.0, MAX(titleW, msgW) + 68.0);
-                CGFloat w = MIN(desiredWidth, self.window.bounds.size.width - 16.0);
+                BOOL isLandscape = self.window.bounds.size.width > self.window.bounds.size.height;
+                CGFloat w;
+                if (isLandscape) {
+                    w = MIN(320.0, self.window.bounds.size.width - 16.0);
+                } else {
+                    CGFloat titleW = [self.notifView.titleLabel intrinsicContentSize].width;
+                    CGFloat msgW = [self.notifView.messageLabel intrinsicContentSize].width;
+                    CGFloat desiredWidth = MAX(240.0, MAX(titleW, msgW) + 68.0);
+                    w = MIN(desiredWidth, self.window.bounds.size.width - 16.0);
+                }
                 CGRect newFrame = [self expandedFrameForWidth:w height:72.0];
                 
                 self.containerView.frame = newFrame;
@@ -719,10 +730,15 @@ static void dinReloadLandscapeOffsets() {
         default: // Standard
         {
             expandedHeight = 72.0;
-            CGFloat titleW = [self.notifView.titleLabel intrinsicContentSize].width;
-            CGFloat msgW = [self.notifView.messageLabel intrinsicContentSize].width;
-            CGFloat desiredWidth = MAX(240.0, MAX(titleW, msgW) + 68.0);
-            expandedWidth = MIN(desiredWidth, self.window.bounds.size.width - 16.0);
+            BOOL isLandscape = self.window.bounds.size.width > self.window.bounds.size.height;
+            if (isLandscape) {
+                expandedWidth = 320.0;
+            } else {
+                CGFloat titleW = [self.notifView.titleLabel intrinsicContentSize].width;
+                CGFloat msgW = [self.notifView.messageLabel intrinsicContentSize].width;
+                CGFloat desiredWidth = MAX(240.0, MAX(titleW, msgW) + 68.0);
+                expandedWidth = MIN(desiredWidth, self.window.bounds.size.width - 16.0);
+            }
             break;
         }
     }
