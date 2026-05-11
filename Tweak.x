@@ -756,37 +756,32 @@ static void dinReloadLandscapeOffsets() {
     CGFloat pillRadius = pill.size.height / 2.0;
 
     double animDuration = [DINPreferences sharedInstance].animationDuration;
-    double fadeOutTextDur = (animDuration / 0.45) * 0.15;
-    double shrinkDelay = (animDuration / 0.45) * 0.1;
-    double shrinkDur = (animDuration / 0.45) * 0.4;
-    double fadeOutBgDur = (animDuration / 0.45) * 0.2;
+    
+    // Dừng ngay hiệu ứng cuộn chữ (nếu có) để tránh giật hình
+    [self.notifView.messageLabel.layer removeAllAnimations];
 
-    // 1. Làm mờ (Fade out) phần văn bản/nội dung cực nhanh trước
-    [UIView animateWithDuration:fadeOutTextDur delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^{
+    // 1. Làm mờ phần văn bản/nội dung cực nhanh (chỉ tốn 1/3 thời gian tổng)
+    [UIView animateWithDuration:animDuration * 0.3 delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^{
         self.notifView.alpha = 0;
-        self.notifView.transform = CGAffineTransformMakeScale(0.6, 0.6);
+        self.notifView.transform = CGAffineTransformMakeScale(0.8, 0.8);
     } completion:nil];
 
-    // 2. Khung viền thu nhỏ lại thành viên thuốc (delay để chờ chữ mờ đi)
-    [UIView animateWithDuration:shrinkDur delay:shrinkDelay
-     usingSpringWithDamping:0.7 initialSpringVelocity:1.0
-                    options:UIViewAnimationOptionCurveEaseInOut
+    // 2. Thu nhỏ khung viền và hoà quyện mờ dần vào DI nguyên bản
+    [UIView animateWithDuration:animDuration delay:0
+         usingSpringWithDamping:0.75 initialSpringVelocity:0.8
+                        options:UIViewAnimationOptionCurveEaseInOut | UIViewAnimationOptionAllowUserInteraction
                  animations:^{
         self.containerView.frame = pill;
         self.containerView.layer.cornerRadius = pillRadius;
         self.bgView.layer.cornerRadius = pillRadius;
-        self.bgView.alpha = 0;
+        self.containerView.alpha = 0; // Làm mờ bóng đổ và viền ĐỒNG THỜI khi thu nhỏ
     } completion:^(BOOL finished) {
-        [UIView animateWithDuration:fadeOutBgDur animations:^{
-            self.containerView.alpha = 0;
-        } completion:^(BOOL finished) {
-            self.window.hidden = YES;
-            self.showing = NO;
-            [self.notifView removeFromSuperview];
-            [self.bgView removeFromSuperview];
-            self.notifView = nil;
-            self.bgView = nil;
-        }];
+        self.window.hidden = YES;
+        self.showing = NO;
+        [self.notifView removeFromSuperview];
+        [self.bgView removeFromSuperview];
+        self.notifView = nil;
+        self.bgView = nil;
     }];
 }
 
