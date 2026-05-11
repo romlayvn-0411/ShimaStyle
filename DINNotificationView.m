@@ -81,8 +81,8 @@
     _messageLabel = [[UILabel alloc] init];
     _messageLabel.font = [UIFont systemFontOfSize:14]; // Tăng cỡ chữ nhẹ để cân đối với khung
     _messageLabel.textColor = [UIColor secondaryLabelColor];
-    _messageLabel.numberOfLines = 4; // Cho phép nội dung dãn tối đa 4 dòng
-    _messageLabel.lineBreakMode = NSLineBreakByTruncatingTail; // Hiển thị "..." ở cuối thay vì chạy chữ
+    _messageLabel.numberOfLines = 1;
+    _messageLabel.lineBreakMode = NSLineBreakByClipping; // Không dùng dấu "..." để phục vụ chạy chữ (Marquee)
     _messageLabel.translatesAutoresizingMaskIntoConstraints = NO;
 
     [_messageContainer addSubview:_messageLabel];
@@ -94,7 +94,7 @@
         [_iconImageView.widthAnchor constraintEqualToConstant:44],
         [_iconImageView.heightAnchor constraintEqualToConstant:44],
         [_iconImageView.leadingAnchor constraintEqualToAnchor:self.leadingAnchor constant:8],
-        [_iconImageView.topAnchor constraintEqualToAnchor:self.topAnchor constant:14], // Neo cố định icon lên trên
+        [_iconImageView.centerYAnchor constraintEqualToAnchor:self.centerYAnchor],
 
         [_titleLabel.leadingAnchor constraintEqualToAnchor:_iconImageView.trailingAnchor constant:8],
         [_titleLabel.trailingAnchor constraintEqualToAnchor:self.trailingAnchor constant:-8],
@@ -104,23 +104,20 @@
 
         [_messageLabel.leadingAnchor constraintEqualToAnchor:_messageContainer.leadingAnchor],
         [_messageLabel.topAnchor constraintEqualToAnchor:_messageContainer.topAnchor],
-        [_messageLabel.trailingAnchor constraintEqualToAnchor:_messageContainer.trailingAnchor],
         [_messageLabel.bottomAnchor constraintEqualToAnchor:_messageContainer.bottomAnchor],
     ]];
 
     if (message.length > 0) {
         _messageLabel.text = message;
         [NSLayoutConstraint activateConstraints:@[
-            [_titleLabel.topAnchor constraintEqualToAnchor:self.topAnchor constant:14], // Tiêu đề ngang hàng icon
-            [_messageContainer.topAnchor constraintEqualToAnchor:_titleLabel.bottomAnchor constant:2], // Nội dung nối tiếp
-            [self.bottomAnchor constraintGreaterThanOrEqualToAnchor:_messageContainer.bottomAnchor constant:14], // Đẩy khung dãn ra
-            [self.bottomAnchor constraintGreaterThanOrEqualToAnchor:_iconImageView.bottomAnchor constant:14], // Đảm bảo bọc kín icon
+            [_titleLabel.bottomAnchor constraintEqualToAnchor:_iconImageView.centerYAnchor constant:1],
+            [_messageContainer.topAnchor constraintEqualToAnchor:_iconImageView.centerYAnchor constant:-1],
+            [_messageContainer.heightAnchor constraintEqualToConstant:18]
         ]];
     } else {
         _messageContainer.hidden = YES;
         [NSLayoutConstraint activateConstraints:@[
             [_titleLabel.centerYAnchor constraintEqualToAnchor:_iconImageView.centerYAnchor],
-            [self.bottomAnchor constraintGreaterThanOrEqualToAnchor:_iconImageView.bottomAnchor constant:14],
         ]];
     }
 }
@@ -267,9 +264,6 @@
 - (void)startMarquee {
     if (!_messageLabel || !_messageContainer || _messageContainer.hidden) return;
     
-    // Tắt chạy chữ Marquee nếu ở chế độ Tiêu chuẩn (đã tự dãn chiều cao)
-    if (self.messageLabel.numberOfLines != 1) return;
-    
     [self.messageLabel.layer removeAllAnimations];
     self.messageLabel.transform = CGAffineTransformIdentity;
     
@@ -279,7 +273,10 @@
     if (textWidth > containerWidth && containerWidth > 0) {
         CGFloat distance = textWidth - containerWidth + 12; // Chạy lố ra 12pt để có khoảng thở
         
-        [UIView animateWithDuration:2.5 delay:0.5 options:UIViewAnimationOptionCurveLinear | UIViewAnimationOptionBeginFromCurrentState animations:^{
+        // Tính toán thời gian dựa trên độ dài văn bản để tốc độ cuộn luôn êm ái và dễ đọc (vận tốc ~35pt/giây)
+        NSTimeInterval scrollDuration = MAX(2.5, distance / 35.0);
+        
+        [UIView animateWithDuration:scrollDuration delay:0.5 options:UIViewAnimationOptionCurveLinear | UIViewAnimationOptionBeginFromCurrentState animations:^{
             self.messageLabel.transform = CGAffineTransformMakeTranslation(-distance, 0);
         } completion:nil];
     }

@@ -497,12 +497,11 @@ static void dinReloadLandscapeOffsets() {
         case 1: expandedWidth = 220.0; expandedHeight = 56.0; break;
         case 2: expandedWidth = 120.0; expandedHeight = 64.0; break;
         default: {
-            expandedWidth = 320.0;
-            CGFloat w = MIN(expandedWidth, size.width - 16.0);
-            CGSize fittingSize = [self.notifView systemLayoutSizeFittingSize:CGSizeMake(w, UILayoutFittingCompressedSize.height)
-                                           withHorizontalFittingPriority:UILayoutPriorityRequired
-                                                 verticalFittingPriority:UILayoutPriorityFittingSizeLevel];
-            expandedHeight = MAX(72.0, fittingSize.height);
+            expandedHeight = 72.0; // Khoá cố định chiều cao
+            CGFloat titleW = [self.notifView.titleLabel intrinsicContentSize].width;
+            CGFloat msgW = [self.notifView.messageLabel intrinsicContentSize].width;
+            CGFloat desiredWidth = MAX(240.0, MAX(titleW, msgW) + 68.0); // Tính toán độ dài chuẩn xác dựa trên số lượng chữ
+            expandedWidth = MIN(desiredWidth, size.width - 16.0); // Không vượt quá 2 mép màn hình
             break;
         }
     }
@@ -609,19 +608,16 @@ static void dinReloadLandscapeOffsets() {
                 [self.notifView updateTitle:title message:message appName:appName icon:icon count:self.notificationCount];
             }
             
-            // Tự động co giãn lại khung nếu nội dung tin nhắn thay đổi chiều cao (Chỉ dành cho chế độ Tiêu chuẩn)
+            // Tự động co giãn chiều dài khung (Chỉ dành cho chế độ Tiêu chuẩn)
             DINPreferences *prefs = [DINPreferences sharedInstance];
             if (prefs.notificationStyle == 0) {
-                CGFloat w = MIN(320.0, self.window.bounds.size.width - 16.0);
-                CGSize fittingSize = [self.notifView systemLayoutSizeFittingSize:CGSizeMake(w, UILayoutFittingCompressedSize.height)
-                                               withHorizontalFittingPriority:UILayoutPriorityRequired
-                                                     verticalFittingPriority:UILayoutPriorityFittingSizeLevel];
-                CGFloat newHeight = MAX(72.0, fittingSize.height);
-                CGRect newFrame = [self expandedFrameForWidth:w height:newHeight];
+                CGFloat titleW = [self.notifView.titleLabel intrinsicContentSize].width;
+                CGFloat msgW = [self.notifView.messageLabel intrinsicContentSize].width;
+                CGFloat desiredWidth = MAX(240.0, MAX(titleW, msgW) + 68.0);
+                CGFloat w = MIN(desiredWidth, self.window.bounds.size.width - 16.0);
+                CGRect newFrame = [self expandedFrameForWidth:w height:72.0];
                 
                 self.containerView.frame = newFrame;
-                self.containerView.layer.cornerRadius = newHeight / 2.0;
-                self.bgView.layer.cornerRadius = newHeight / 2.0;
             }
     } completion:^(BOOL finished) {
         if ([self.notifView respondsToSelector:@selector(startMarquee)]) {
@@ -722,12 +718,11 @@ static void dinReloadLandscapeOffsets() {
             break;
         default: // Standard
         {
-            expandedWidth = 320.0;
-            CGFloat w = MIN(expandedWidth, self.window.bounds.size.width - 16.0);
-            CGSize fittingSize = [self.notifView systemLayoutSizeFittingSize:CGSizeMake(w, UILayoutFittingCompressedSize.height)
-                                           withHorizontalFittingPriority:UILayoutPriorityRequired
-                                                 verticalFittingPriority:UILayoutPriorityFittingSizeLevel];
-            expandedHeight = MAX(72.0, fittingSize.height); // Tối thiểu 72, nếu chữ dài tự động bung lên
+            expandedHeight = 72.0;
+            CGFloat titleW = [self.notifView.titleLabel intrinsicContentSize].width;
+            CGFloat msgW = [self.notifView.messageLabel intrinsicContentSize].width;
+            CGFloat desiredWidth = MAX(240.0, MAX(titleW, msgW) + 68.0);
+            expandedWidth = MIN(desiredWidth, self.window.bounds.size.width - 16.0);
             break;
         }
     }

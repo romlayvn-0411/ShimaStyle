@@ -62,8 +62,8 @@ jobs:
         run: |
           echo "body<<EOF" >> $GITHUB_OUTPUT
           echo "### 📝 Danh sách thay đổi:" >> $GITHUB_OUTPUT
-          # Lấy danh sách tối đa 10 commit gần nhất kèm tên người code
-          git log -10 --pretty=format:"- %h: %s (%an)" >> $GITHUB_OUTPUT
+          # Lấy danh sách tối đa 3 commit gần nhất kèm tên người code
+          git log -3 --pretty=format:"- %h: %s (%an)" >> $GITHUB_OUTPUT
           echo "" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
