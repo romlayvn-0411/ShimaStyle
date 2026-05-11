@@ -68,6 +68,10 @@
 @interface NCNotificationSystemApertureDestination : NSObject
 @end
 
+@interface PKPushPayload : NSObject
+- (NSDictionary *)dictionaryPayload;
+@end
+
 // ============================================================================
 // MARK: - Rate Limiting
 // ============================================================================
@@ -85,42 +89,84 @@ static BOOL dinShouldThrottle(void) {
 // ============================================================================
 
 static BOOL dinIsDeviceLockedOrInCoverSheet(void) {
-    BOOL isLocked = NO;
-    // Tối ưu hóa 1: Cache Class bằng dispatch_once để không tốn CPU tra cứu lại
-    static Class s_SBLockScreenManagerClass = nil;
-    static dispatch_once_t onceTokenLock;
-    dispatch_once(&onceTokenLock, ^{ s_SBLockScreenManagerClass = objc_lookUpClass("SBLockScreenManager"); });
-    
-    if (s_SBLockScreenManagerClass) {
-        id lockScreenManager = ((id (*)(Class, SEL))objc_msgSend)(s_SBLockScreenManagerClass, sel_registerName("sharedInstance"));
-        if (lockScreenManager && [lockScreenManager respondsToSelector:@selector(isLockScreenVisible)]) {
-            isLocked = ((BOOL (*)(id, SEL))objc_msgSend)(lockScreenManager, @selector(isLockScreenVisible));
+    __block BOOL isLocked = NO;
+    dispatch_block_t getLockBlock = ^{
+        static Class s_SBLockScreenManagerClass = nil;
+        static dispatch_once_t onceTokenLock;
+        dispatch_once(&onceTokenLock, ^{ s_SBLockScreenManagerClass = objc_lookUpClass("SBLockScreenManager"); });
+        
+        if (s_SBLockScreenManagerClass) {
+            id lockScreenManager = ((id (*)(Class, SEL))objc_msgSend)(s_SBLockScreenManagerClass, sel_registerName("sharedInstance"));
+            if (lockScreenManager && [lockScreenManager respondsToSelector:@selector(isLockScreenVisible)]) {
+                isLocked = ((BOOL (*)(id, SEL))objc_msgSend)(lockScreenManager, @selector(isLockScreenVisible));
+            }
         }
+    };
+    if ([NSThread isMainThread]) {
+        getLockBlock();
+    } else {
+        dispatch_sync(dispatch_get_main_queue(), getLockBlock); // Ép chạy an toàn trên luồng chính
     }
     return isLocked;
 }
 
 // --- Helper: Lấy BundleID của ứng dụng đang hiển thị trên màn hình ---
 static NSString *dinActiveAppBundleID(void) {
-    @try {
-        id sb = [UIApplication sharedApplication];
-        if ([sb respondsToSelector:@selector(_accessibilityFrontMostApplication)]) {
-            id app = [sb performSelector:@selector(_accessibilityFrontMostApplication)];
-            if (app && [app respondsToSelector:@selector(bundleIdentifier)]) {
-                return [app performSelector:@selector(bundleIdentifier)];
+    __block NSString *activeApp = nil;
+    dispatch_block_t getAppBlock = ^{
+        @try {
+            id sb = [UIApplication sharedApplication];
+            if ([sb respondsToSelector:@selector(_accessibilityFrontMostApplication)]) {
+                id app = [sb performSelector:@selector(_accessibilityFrontMostApplication)];
+                if (app && [app respondsToSelector:@selector(bundleIdentifier)]) {
+                    activeApp = [app performSelector:@selector(bundleIdentifier)];
+                }
             }
-        }
-    } @catch (NSException *e) {}
-    return nil;
+        } @catch (NSException *e) {}
+    };
+    if ([NSThread isMainThread]) {
+        getAppBlock();
+    } else {
+        dispatch_sync(dispatch_get_main_queue(), getAppBlock); // Tránh gây treo luồng nền của iOS
+    }
+    return activeApp;
 }
 
 // --- Helper: Lấy hướng xoay THỰC TẾ của ứng dụng đang mở ---
 static UIInterfaceOrientation dinGetActiveOrientation(void) {
-    id sb = [UIApplication sharedApplication];
-    if ([sb respondsToSelector:sel_registerName("activeInterfaceOrientation")]) {
-        return (UIInterfaceOrientation)((NSInteger (*)(id, SEL))objc_msgSend)(sb, sel_registerName("activeInterfaceOrientation"));
+    __block UIInterfaceOrientation orientation = UIInterfaceOrientationPortrait;
+    dispatch_block_t getOrientationBlock = ^{
+        id sb = [UIApplication sharedApplication];
+        if ([sb respondsToSelector:sel_registerName("activeInterfaceOrientation")]) {
+            orientation = (UIInterfaceOrientation)((NSInteger (*)(id, SEL))objc_msgSend)(sb, sel_registerName("activeInterfaceOrientation"));
+        }
+    };
+    if ([NSThread isMainThread]) {
+        getOrientationBlock();
+    } else {
+        dispatch_sync(dispatch_get_main_queue(), getOrientationBlock);
     }
-    return UIInterfaceOrientationPortrait;
+    return orientation;
+}
+
+// ============================================================================
+// MARK: - Bộ Lọc Hiển Thị Thông Minh (Smart Banner Filter)
+// ============================================================================
+
+static BOOL dinShouldShowCustomBanner(id request) {
+    DINPreferences *prefs = [DINPreferences sharedInstance];
+    if (!prefs.enabled || !prefs.notificationEnabled) return NO;
+    
+    if (dinIsDeviceLockedOrInCoverSheet()) return NO; // Đang ở Màn hình khóa -> Nhường hệ thống
+
+    NSString *bundleIdentifier = [request respondsToSelector:@selector(sectionIdentifier)] ? [request sectionIdentifier] : nil;
+    NSString *activeApp = dinActiveAppBundleID();
+    
+    if (bundleIdentifier && [bundleIdentifier isEqualToString:activeApp]) {
+        return NO; // Nhận tin nhắn từ app đang mở -> Nhường app tự hiện thông báo trong
+    }
+    
+    return YES;
 }
 
 // ============================================================================
@@ -381,6 +427,7 @@ static void dinReloadLandscapeOffsets() {
 - (void)dismiss;
 - (void)openAppAndDismiss;
 - (CGRect)calculateFrameForWidth:(CGFloat)width height:(CGFloat)height size:(CGSize)size;
++ (void)presentNotificationFromRequest:(id)request withForcedTitle:(NSString *)forcedTitle message:(NSString *)forcedMessage bundleIdentifier:(NSString *)forcedBundleID;
 + (void)presentNotificationFromRequest:(id)request;
 @end
 
@@ -847,26 +894,37 @@ static void dinReloadLandscapeOffsets() {
     // MARK: - Core Notification Presentation Logic
     // ============================================================================
 
++ (void)presentNotificationFromRequest:(id)request withForcedTitle:(NSString *)forcedTitle message:(NSString *)forcedMessage bundleIdentifier:(NSString *)forcedBundleID {
+    [self _presentWithRequest:request forcedTitle:forcedTitle forcedMessage:forcedMessage forcedBundleID:forcedBundleID];
+}
+
 + (void)presentNotificationFromRequest:(id)request {
+    [self _presentWithRequest:request forcedTitle:nil forcedMessage:nil forcedBundleID:nil];
+}
+
++ (void)_presentWithRequest:(id)request forcedTitle:(NSString *)forcedTitle forcedMessage:(NSString *)forcedMessage forcedBundleID:(NSString *)forcedBundleID {
     NCNotificationContent *content = [request respondsToSelector:@selector(content)] ? [request content] : nil;
-    NSString *title = [content respondsToSelector:@selector(title)] ? [content title] : nil;
-    NSString *subtitle = [content respondsToSelector:@selector(subtitle)] ? [content subtitle] : nil;
-    NSString *message = [content respondsToSelector:@selector(message)] ? [content message] : nil;
-    NSString *bundleIdentifier = [request respondsToSelector:@selector(sectionIdentifier)] ? [request sectionIdentifier] : nil;
+    NSString *bundleIdentifier = forcedBundleID ?: ([request respondsToSelector:@selector(sectionIdentifier)] ? [request sectionIdentifier] : nil);
 
     dispatch_block_t showBlock = ^{
-        // SỬA LỖI 1: Hỗ trợ Telegram (app hay nhét chữ vào subtitle thay vì message)
-        if (!title && !message && !subtitle) return;
         
         NSString *finalTitle = title;
         NSString *finalMessage = message;
-        
-        if (!finalMessage && subtitle) {
-            finalMessage = subtitle; // Nếu không có message, lấy subtitle đắp vào
-        } else if (title && subtitle) {
-            finalTitle = [NSString stringWithFormat:@"%@ - %@", title, subtitle]; // Nối title và subtitle
+
+        if (forcedTitle || forcedMessage) {
+            finalTitle = forcedTitle;
+            finalMessage = forcedMessage;
+        } else {
+            NSString *subtitle = [content respondsToSelector:@selector(subtitle)] ? [content subtitle] : nil;
+            if (!finalMessage && subtitle) {
+                finalMessage = subtitle; // Nếu không có message, lấy subtitle đắp vào
+            } else if (title && subtitle) {
+                finalTitle = [NSString stringWithFormat:@"%@ - %@", title, subtitle]; // Nối title và subtitle
+            }
         }
         
+        if (!finalTitle && !finalMessage) return;
+
         NSString *appName = nil;
         static NSCache *sAppNameCache = nil;
         static dispatch_once_t onceTokenName;
@@ -919,48 +977,19 @@ static void dinReloadLandscapeOffsets() {
 %hook NCNotificationDispatcher
 
 - (void)postNotificationWithRequest:(id)request {
-    DINPreferences *prefs = [DINPreferences sharedInstance];
-    if (!prefs.enabled || !prefs.notificationEnabled) {
-        %orig;
-        return;
-    }
-
-    NSString *bundleIdentifier = [request respondsToSelector:@selector(sectionIdentifier)] ? [request sectionIdentifier] : nil;
-    NSString *activeApp = dinActiveAppBundleID();
-
-    // SỬA LỖI 2: Nếu đang ở TRONG CHÍNH APP ĐÓ (VD: Đang mở Telegram, nhận tin nhắn Telegram) -> Nhường App tự xử lý!
-    if (bundleIdentifier && [bundleIdentifier isEqualToString:activeApp]) {
-        %orig;
-        return;
-    }
-
-    if (dinShouldThrottle()) {
-        %orig;
-        return;
-    }
-    sLastNotificationTime = [NSDate date];
-
-    // Gọi %orig NGAY LẬP TỨC để hệ thống lưu lịch sử, phát âm thanh và rung mượt mà
     %orig; 
 
-    if (!dinIsDeviceLockedOrInCoverSheet()) {
-        [DINOverlayManager presentNotificationFromRequest:request];
-    }
+    if (!dinShouldShowCustomBanner(request)) return;
+    if (dinShouldThrottle()) return;
+    
+    sLastNotificationTime = [NSDate date];
+    [DINOverlayManager presentNotificationFromRequest:request];
 }
 
 - (void)modifyNotificationWithRequest:(id)request {
     %orig;
-    DINPreferences *prefs = [DINPreferences sharedInstance];
-    
-    NSString *bundleIdentifier = [request respondsToSelector:@selector(sectionIdentifier)] ? [request sectionIdentifier] : nil;
-    NSString *activeApp = dinActiveAppBundleID();
-    if (bundleIdentifier && [bundleIdentifier isEqualToString:activeApp]) {
-        return;
-    }
-    
-    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) {
-        [DINOverlayManager presentNotificationFromRequest:request];
-    }
+    if (!dinShouldShowCustomBanner(request)) return;
+    [DINOverlayManager presentNotificationFromRequest:request];
 }
 
 %end
@@ -969,29 +998,25 @@ static void dinReloadLandscapeOffsets() {
 
 %hook SBNCAlertingController
 - (BOOL)alertDispatcher:(id)arg1 shouldPresentAlertForNotificationRequest:(id)arg2 {
-    DINPreferences *prefs = [DINPreferences sharedInstance];
-    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) return NO;
+    if (dinShouldShowCustomBanner(arg2)) return NO;
     return %orig;
 }
 - (void)alertDispatcher:(id)arg1 postAlertForNotificationRequest:(id)arg2 {
-    DINPreferences *prefs = [DINPreferences sharedInstance];
-    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) return;
+    if (dinShouldShowCustomBanner(arg2)) return;
     %orig;
 }
 %end
 
 %hook NCNotificationBannerDestination
 - (BOOL)canReceiveNotificationRequest:(id)arg1 {
-    DINPreferences *prefs = [DINPreferences sharedInstance];
-    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) return NO;
+    if (dinShouldShowCustomBanner(arg1)) return NO;
     return %orig;
 }
 %end
 
 %hook SBNotificationBannerDestination
 - (BOOL)canReceiveNotificationRequest:(id)arg1 {
-    DINPreferences *prefs = [DINPreferences sharedInstance];
-    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) return NO;
+    if (dinShouldShowCustomBanner(arg1)) return NO;
     return %orig;
 }
 %end
@@ -1000,25 +1025,59 @@ static void dinReloadLandscapeOffsets() {
 
 %hook SBNCSystemApertureNotificationDestination
 - (BOOL)canReceiveNotificationRequest:(id)arg1 {
-    DINPreferences *prefs = [DINPreferences sharedInstance];
-    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) return NO;
+    if (dinShouldShowCustomBanner(arg1)) return NO;
     return %orig;
 }
 %end
 
 %hook SBSystemApertureNotificationDestination
 - (BOOL)canReceiveNotificationRequest:(id)arg1 {
-    DINPreferences *prefs = [DINPreferences sharedInstance];
-    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) return NO;
+    if (dinShouldShowCustomBanner(arg1)) return NO;
     return %orig;
 }
 %end
 
 %hook NCNotificationSystemApertureDestination
 - (BOOL)canReceiveNotificationRequest:(id)arg1 {
-    DINPreferences *prefs = [DINPreferences sharedInstance];
-    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) return NO;
+    if (dinShouldShowCustomBanner(arg1)) return NO;
     return %orig;
+}
+%end
+
+%hook PKPushRegistry
+- (void)pushRegistry:(id)registry didReceiveIncomingPushWithPayload:(PKPushPayload *)payload forType:(NSString *)type withCompletionHandler:(void (^)(void))completion {
+    %orig;
+
+    @try {
+        // Chỉ xử lý PushKit của Telegram
+        NSString *bundleIdentifier = [self.delegate bundleIdentifier];
+        if (![bundleIdentifier isEqualToString:@"ph.telegra.Telegraph"]) {
+            return;
+        }
+
+        if (!dinShouldShowCustomBanner(nil)) return; // Dùng bộ lọc chung (đã bao gồm check Tweak bật/tắt, Lockscreen, Active App)
+        
+        NSDictionary *dict = [payload dictionaryPayload];
+        if (!dict || ![dict isKindOfClass:[NSDictionary class]]) return;
+        
+        NSDictionary *aps = dict[@"aps"];
+        if (!aps || ![aps isKindOfClass:[NSDictionary class]]) return;
+
+        id alert = aps[@"alert"];
+        NSString *title = nil;
+        NSString *message = nil;
+
+        if ([alert isKindOfClass:[NSString class]]) {
+            message = alert;
+        } else if ([alert isKindOfClass:[NSDictionary class]]) {
+            title = alert[@"title"];
+            message = alert[@"body"];
+        }
+
+        if (title || message) {
+            [DINOverlayManager presentNotificationFromRequest:nil withForcedTitle:title message:message bundleIdentifier:bundleIdentifier];
+        }
+    } @catch (NSException *e) {}
 }
 %end
 
