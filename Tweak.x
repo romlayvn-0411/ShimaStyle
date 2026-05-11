@@ -93,26 +93,25 @@ static BOOL dinIsDeviceLockedOrInCoverSheet(void) {
     
     if (s_SBLockScreenManagerClass) {
         id lockScreenManager = ((id (*)(Class, SEL))objc_msgSend)(s_SBLockScreenManagerClass, sel_registerName("sharedInstance"));
-        if (lockScreenManager) {
-            if ([lockScreenManager respondsToSelector:sel_registerName("isLockScreenVisible")] &&
-                ((BOOL (*)(id, SEL))objc_msgSend)(lockScreenManager, sel_registerName("isLockScreenVisible"))) {
-                isLocked = YES;
-            } else if ([lockScreenManager respondsToSelector:sel_registerName("isUILocked")] &&
-                       ((BOOL (*)(id, SEL))objc_msgSend)(lockScreenManager, sel_registerName("isUILocked"))) {
-                isLocked = YES;
-            } else if ([lockScreenManager respondsToSelector:sel_registerName("coverSheetViewController")]) {
-                id csvc = ((id (*)(id, SEL))objc_msgSend)(lockScreenManager, sel_registerName("coverSheetViewController"));
-                if (csvc) {
-                    if ([csvc respondsToSelector:sel_registerName("isPresented")] && ((BOOL (*)(id, SEL))objc_msgSend)(csvc, sel_registerName("isPresented"))) {
-                        isLocked = YES;
-                    } else if ([csvc respondsToSelector:sel_registerName("isPresenting")] && ((BOOL (*)(id, SEL))objc_msgSend)(csvc, sel_registerName("isPresenting"))) {
-                        isLocked = YES;
-                    }
-                }
-            }
+        if (lockScreenManager && [lockScreenManager respondsToSelector:@selector(isLockScreenVisible)]) {
+            isLocked = ((BOOL (*)(id, SEL))objc_msgSend)(lockScreenManager, @selector(isLockScreenVisible));
         }
     }
     return isLocked;
+}
+
+// --- Helper: Lấy BundleID của ứng dụng đang hiển thị trên màn hình ---
+static NSString *dinActiveAppBundleID(void) {
+    @try {
+        id sb = [UIApplication sharedApplication];
+        if ([sb respondsToSelector:@selector(_accessibilityFrontMostApplication)]) {
+            id app = [sb performSelector:@selector(_accessibilityFrontMostApplication)];
+            if (app && [app respondsToSelector:@selector(bundleIdentifier)]) {
+                return [app performSelector:@selector(bundleIdentifier)];
+            }
+        }
+    } @catch (NSException *e) {}
+    return nil;
 }
 
 // --- Helper: Lấy hướng xoay THỰC TẾ của ứng dụng đang mở ---
@@ -851,11 +850,22 @@ static void dinReloadLandscapeOffsets() {
 + (void)presentNotificationFromRequest:(id)request {
     NCNotificationContent *content = [request respondsToSelector:@selector(content)] ? [request content] : nil;
     NSString *title = [content respondsToSelector:@selector(title)] ? [content title] : nil;
+    NSString *subtitle = [content respondsToSelector:@selector(subtitle)] ? [content subtitle] : nil;
     NSString *message = [content respondsToSelector:@selector(message)] ? [content message] : nil;
     NSString *bundleIdentifier = [request respondsToSelector:@selector(sectionIdentifier)] ? [request sectionIdentifier] : nil;
 
     dispatch_block_t showBlock = ^{
-        if (!title && !message) return;
+        // SỬA LỖI 1: Hỗ trợ Telegram (app hay nhét chữ vào subtitle thay vì message)
+        if (!title && !message && !subtitle) return;
+        
+        NSString *finalTitle = title;
+        NSString *finalMessage = message;
+        
+        if (!finalMessage && subtitle) {
+            finalMessage = subtitle; // Nếu không có message, lấy subtitle đắp vào
+        } else if (title && subtitle) {
+            finalTitle = [NSString stringWithFormat:@"%@ - %@", title, subtitle]; // Nối title và subtitle
+        }
         
         NSString *appName = nil;
         static NSCache *sAppNameCache = nil;
@@ -888,7 +898,7 @@ static void dinReloadLandscapeOffsets() {
         if (!icon) icon = dinAppIcon(bundleIdentifier);
         if (!icon) icon = dinPlaceholderIcon(appName);
         
-        [[DINOverlayManager sharedInstance] showWithTitle:title message:message
+        [[DINOverlayManager sharedInstance] showWithTitle:finalTitle message:finalMessage
                                                   appName:appName icon:icon
                                          bundleIdentifier:bundleIdentifier];
     };
@@ -915,6 +925,15 @@ static void dinReloadLandscapeOffsets() {
         return;
     }
 
+    NSString *bundleIdentifier = [request respondsToSelector:@selector(sectionIdentifier)] ? [request sectionIdentifier] : nil;
+    NSString *activeApp = dinActiveAppBundleID();
+
+    // SỬA LỖI 2: Nếu đang ở TRONG CHÍNH APP ĐÓ (VD: Đang mở Telegram, nhận tin nhắn Telegram) -> Nhường App tự xử lý!
+    if (bundleIdentifier && [bundleIdentifier isEqualToString:activeApp]) {
+        %orig;
+        return;
+    }
+
     if (dinShouldThrottle()) {
         %orig;
         return;
@@ -932,6 +951,13 @@ static void dinReloadLandscapeOffsets() {
 - (void)modifyNotificationWithRequest:(id)request {
     %orig;
     DINPreferences *prefs = [DINPreferences sharedInstance];
+    
+    NSString *bundleIdentifier = [request respondsToSelector:@selector(sectionIdentifier)] ? [request sectionIdentifier] : nil;
+    NSString *activeApp = dinActiveAppBundleID();
+    if (bundleIdentifier && [bundleIdentifier isEqualToString:activeApp]) {
+        return;
+    }
+    
     if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) {
         [DINOverlayManager presentNotificationFromRequest:request];
     }
