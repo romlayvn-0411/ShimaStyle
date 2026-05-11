@@ -10,6 +10,8 @@
         <string>PSLinkCell</string>
         <key>detail</key>
         <string>DINRootListController</string>
+        <key>icon</key>
+        <string>icon@3x.png</string>
         <key>isController</key>
         <true/>
         <key>label</key>
