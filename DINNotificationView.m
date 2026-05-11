@@ -221,15 +221,15 @@
     [self addSubview:_titleLabel];
     [NSLayoutConstraint activateConstraints:@[
         [_iconImageView.centerXAnchor constraintEqualToAnchor:self.centerXAnchor],
-        [_iconImageView.topAnchor constraintEqualToAnchor:self.topAnchor],
+        [_iconImageView.topAnchor constraintEqualToAnchor:self.topAnchor constant:8], // Đẩy icon xuống để cân đối theo chiều dọc
         [_iconImageView.widthAnchor constraintEqualToConstant:32],
         [_iconImageView.heightAnchor constraintEqualToConstant:32],
 
-        [_titleLabel.topAnchor constraintEqualToAnchor:_iconImageView.bottomAnchor constant:4],
+        [_titleLabel.topAnchor constraintEqualToAnchor:_iconImageView.bottomAnchor constant:2], // Thu hẹp khoảng cách giữa icon và tiêu đề
         [_titleLabel.centerXAnchor constraintEqualToAnchor:self.centerXAnchor],
         [_titleLabel.leadingAnchor constraintEqualToAnchor:self.leadingAnchor],
         [_titleLabel.trailingAnchor constraintEqualToAnchor:self.trailingAnchor],
-        [_titleLabel.bottomAnchor constraintEqualToAnchor:self.bottomAnchor],
+        [_titleLabel.bottomAnchor constraintLessThanOrEqualToAnchor:self.bottomAnchor constant:-4], // Tránh bị ép giãn chữ
         [self.widthAnchor constraintGreaterThanOrEqualToConstant:32],
     ]];
 }

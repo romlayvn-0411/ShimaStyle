@@ -3,6 +3,7 @@
 #import <AVFoundation/AVFoundation.h>
 #import <objc/runtime.h>
 #import <objc/message.h>
+#import <ImageIO/ImageIO.h>
 #import <notify.h>
 #import "DINNotificationView.h"
 #import "DINPreferences.h"
@@ -267,7 +268,40 @@ static UIImage *dinGetCachedCustomImage(NSString *path) {
     dispatch_once(&onceToken, ^{ sImageCache = [[NSCache alloc] init]; });
     UIImage *img = [sImageCache objectForKey:path];
     if (!img) {
-        img = [UIImage imageWithContentsOfFile:path];
+        if ([[path.pathExtension lowercaseString] isEqualToString:@"gif"]) {
+            NSData *data = [NSData dataWithContentsOfFile:path];
+            if (data) {
+                CGImageSourceRef source = CGImageSourceCreateWithData((__bridge CFDataRef)data, NULL);
+                if (source) {
+                    size_t count = CGImageSourceGetCount(source);
+                    NSMutableArray *images = [NSMutableArray array];
+                    NSTimeInterval duration = 0.0f;
+                    
+                    for (size_t i = 0; i < count; i++) {
+                        CGImageRef imageRef = CGImageSourceCreateImageAtIndex(source, i, NULL);
+                        if (imageRef) {
+                            [images addObject:[UIImage imageWithCGImage:imageRef scale:UIScreen.mainScreen.scale orientation:UIImageOrientationUp]];
+                            
+                            NSDictionary *properties = (__bridge_transfer NSDictionary *)CGImageSourceCopyPropertiesAtIndex(source, i, NULL);
+                            NSDictionary *gifProperties = properties[(NSString *)kCGImagePropertyGIFDictionary];
+                            NSNumber *delayTime = gifProperties[(NSString *)kCGImagePropertyGIFUnclampedDelayTime];
+                            if (!delayTime) delayTime = gifProperties[(NSString *)kCGImagePropertyGIFDelayTime];
+                            duration += [delayTime doubleValue] ?: 0.1;
+                            
+                            CGImageRelease(imageRef);
+                        }
+                    }
+                    CFRelease(source);
+                    
+                    if (images.count > 0) {
+                        img = [UIImage animatedImageWithImages:images duration:duration];
+                    }
+                }
+            }
+        } else {
+            img = [UIImage imageWithContentsOfFile:path];
+        }
+        
         if (img) [sImageCache setObject:img forKey:path];
     }
     return img;
