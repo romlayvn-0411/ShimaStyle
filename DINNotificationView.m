@@ -81,8 +81,8 @@
     _messageLabel = [[UILabel alloc] init];
     _messageLabel.font = [UIFont systemFontOfSize:14]; // Tăng cỡ chữ nhẹ để cân đối với khung
     _messageLabel.textColor = [UIColor secondaryLabelColor];
-    _messageLabel.numberOfLines = 1;
-    _messageLabel.lineBreakMode = NSLineBreakByClipping; // Không dùng dấu "..." để phục vụ chạy chữ (Marquee)
+    _messageLabel.numberOfLines = 4; // Cho phép nội dung dãn tối đa 4 dòng
+    _messageLabel.lineBreakMode = NSLineBreakByTruncatingTail; // Hiển thị "..." ở cuối thay vì chạy chữ
     _messageLabel.translatesAutoresizingMaskIntoConstraints = NO;
 
     [_messageContainer addSubview:_messageLabel];
@@ -90,40 +90,37 @@
     [self addSubview:_titleLabel];
     [self addSubview:_messageContainer];
 
-    // Cấu hình vị trí (Constraints) chung cho cả 2 trường hợp
     [NSLayoutConstraint activateConstraints:@[
-        // 1. Icon: Kích thước 44x44, đưa ra sát viền hơn (cách 8pt thay vì 16pt)
         [_iconImageView.widthAnchor constraintEqualToConstant:44],
         [_iconImageView.heightAnchor constraintEqualToConstant:44],
         [_iconImageView.leadingAnchor constraintEqualToAnchor:self.leadingAnchor constant:8],
-        [_iconImageView.centerYAnchor constraintEqualToAnchor:self.centerYAnchor],
+        [_iconImageView.topAnchor constraintEqualToAnchor:self.topAnchor constant:14], // Neo cố định icon lên trên
 
-        // 2. Kéo Tiêu đề và Nội dung lại gần Icon hơn (cách 8pt thay vì 12pt)
         [_titleLabel.leadingAnchor constraintEqualToAnchor:_iconImageView.trailingAnchor constant:8],
         [_titleLabel.trailingAnchor constraintEqualToAnchor:self.trailingAnchor constant:-8],
         
         [_messageContainer.leadingAnchor constraintEqualToAnchor:_iconImageView.trailingAnchor constant:8],
         [_messageContainer.trailingAnchor constraintEqualToAnchor:self.trailingAnchor constant:-8],
 
-        // 3. Nội dung Label bên trong Container
         [_messageLabel.leadingAnchor constraintEqualToAnchor:_messageContainer.leadingAnchor],
         [_messageLabel.topAnchor constraintEqualToAnchor:_messageContainer.topAnchor],
+        [_messageLabel.trailingAnchor constraintEqualToAnchor:_messageContainer.trailingAnchor],
         [_messageLabel.bottomAnchor constraintEqualToAnchor:_messageContainer.bottomAnchor],
     ]];
 
     if (message.length > 0) {
         _messageLabel.text = message;
-        // Thu ngắn khoảng cách giữa Tiêu đề và Nội dung: Cho 2 thành phần ôm sát vào đường giữa (CenterY) của Icon
         [NSLayoutConstraint activateConstraints:@[
-            [_titleLabel.bottomAnchor constraintEqualToAnchor:_iconImageView.centerYAnchor constant:1],
-            [_messageContainer.topAnchor constraintEqualToAnchor:_iconImageView.centerYAnchor constant:-1],
-            [_messageContainer.heightAnchor constraintEqualToConstant:18]
+            [_titleLabel.topAnchor constraintEqualToAnchor:self.topAnchor constant:14], // Tiêu đề ngang hàng icon
+            [_messageContainer.topAnchor constraintEqualToAnchor:_titleLabel.bottomAnchor constant:2], // Nội dung nối tiếp
+            [self.bottomAnchor constraintGreaterThanOrEqualToAnchor:_messageContainer.bottomAnchor constant:14], // Đẩy khung dãn ra
+            [self.bottomAnchor constraintGreaterThanOrEqualToAnchor:_iconImageView.bottomAnchor constant:14], // Đảm bảo bọc kín icon
         ]];
     } else {
         _messageContainer.hidden = YES;
-        // Nếu KHÔNG có Nội dung: Tiêu đề tự động căn giữa theo Icon
         [NSLayoutConstraint activateConstraints:@[
             [_titleLabel.centerYAnchor constraintEqualToAnchor:_iconImageView.centerYAnchor],
+            [self.bottomAnchor constraintGreaterThanOrEqualToAnchor:_iconImageView.bottomAnchor constant:14],
         ]];
     }
 }
@@ -269,6 +266,9 @@
 
 - (void)startMarquee {
     if (!_messageLabel || !_messageContainer || _messageContainer.hidden) return;
+    
+    // Tắt chạy chữ Marquee nếu ở chế độ Tiêu chuẩn (đã tự dãn chiều cao)
+    if (self.messageLabel.numberOfLines != 1) return;
     
     [self.messageLabel.layer removeAllAnimations];
     self.messageLabel.transform = CGAffineTransformIdentity;

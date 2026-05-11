@@ -496,7 +496,15 @@ static void dinReloadLandscapeOffsets() {
     switch (style) {
         case 1: expandedWidth = 220.0; expandedHeight = 56.0; break;
         case 2: expandedWidth = 120.0; expandedHeight = 64.0; break;
-        default: expandedWidth = 320.0; expandedHeight = 72.0; break;
+        default: {
+            expandedWidth = 320.0;
+            CGFloat w = MIN(expandedWidth, size.width - 16.0);
+            CGSize fittingSize = [self.notifView systemLayoutSizeFittingSize:CGSizeMake(w, UILayoutFittingCompressedSize.height)
+                                           withHorizontalFittingPriority:UILayoutPriorityRequired
+                                                 verticalFittingPriority:UILayoutPriorityFittingSizeLevel];
+            expandedHeight = MAX(72.0, fittingSize.height);
+            break;
+        }
     }
     
     CGFloat w = MIN(expandedWidth, size.width - 16.0);
@@ -600,6 +608,21 @@ static void dinReloadLandscapeOffsets() {
             if ([self.notifView respondsToSelector:@selector(updateTitle:message:appName:icon:count:)]) {
                 [self.notifView updateTitle:title message:message appName:appName icon:icon count:self.notificationCount];
             }
+            
+            // Tự động co giãn lại khung nếu nội dung tin nhắn thay đổi chiều cao (Chỉ dành cho chế độ Tiêu chuẩn)
+            DINPreferences *prefs = [DINPreferences sharedInstance];
+            if (prefs.notificationStyle == 0) {
+                CGFloat w = MIN(320.0, self.window.bounds.size.width - 16.0);
+                CGSize fittingSize = [self.notifView systemLayoutSizeFittingSize:CGSizeMake(w, UILayoutFittingCompressedSize.height)
+                                               withHorizontalFittingPriority:UILayoutPriorityRequired
+                                                     verticalFittingPriority:UILayoutPriorityFittingSizeLevel];
+                CGFloat newHeight = MAX(72.0, fittingSize.height);
+                CGRect newFrame = [self expandedFrameForWidth:w height:newHeight];
+                
+                self.containerView.frame = newFrame;
+                self.containerView.layer.cornerRadius = newHeight / 2.0;
+                self.bgView.layer.cornerRadius = newHeight / 2.0;
+            }
     } completion:^(BOOL finished) {
         if ([self.notifView respondsToSelector:@selector(startMarquee)]) {
             [self.notifView startMarquee];
@@ -687,27 +710,31 @@ static void dinReloadLandscapeOffsets() {
     [self.containerView addSubview:self.notifView];
 
     // Layout dimensions per style
-    CGFloat expandedWidth, expandedHeight, centerYOffset;
+    CGFloat expandedWidth, expandedHeight;
     switch (style) {
         case 1: // Compact
             expandedWidth = 220.0;
             expandedHeight = 56.0;
-            centerYOffset = 0.0;
             break;
         case 2: // Minimal
             expandedWidth = 120.0;
             expandedHeight = 64.0;
-            centerYOffset = 0.0;
             break;
         default: // Standard
+        {
             expandedWidth = 320.0;
-            expandedHeight = 72.0;
-            centerYOffset = 0.0;
+            CGFloat w = MIN(expandedWidth, self.window.bounds.size.width - 16.0);
+            CGSize fittingSize = [self.notifView systemLayoutSizeFittingSize:CGSizeMake(w, UILayoutFittingCompressedSize.height)
+                                           withHorizontalFittingPriority:UILayoutPriorityRequired
+                                                 verticalFittingPriority:UILayoutPriorityFittingSizeLevel];
+            expandedHeight = MAX(72.0, fittingSize.height); // Tối thiểu 72, nếu chữ dài tự động bung lên
             break;
+        }
     }
 
     [NSLayoutConstraint activateConstraints:@[
-        [self.notifView.centerYAnchor constraintEqualToAnchor:self.containerView.centerYAnchor constant:centerYOffset],
+        [self.notifView.topAnchor constraintEqualToAnchor:self.containerView.topAnchor],
+        [self.notifView.bottomAnchor constraintEqualToAnchor:self.containerView.bottomAnchor],
         [self.notifView.leadingAnchor constraintEqualToAnchor:self.containerView.leadingAnchor],
         [self.notifView.trailingAnchor constraintEqualToAnchor:self.containerView.trailingAnchor],
     ]];
@@ -1130,9 +1157,9 @@ static void *kDINBorderLayerKey = &kDINBorderLayerKey;
         &testToken, dispatch_get_main_queue(), ^(int t) {
             UIImage *icon = dinAppIcon(@"com.apple.Preferences");
             if (!icon) icon = dinPlaceholderIcon(@"Settings");
-            [[DINOverlayManager sharedInstance] showWithTitle:@"Test Notification"
-                                                     message:@"This is a test notification from ShimaStyle"
-                                                     appName:@"Settings"
+            [[DINOverlayManager sharedInstance] showWithTitle:@"ShimaStyle"
+                                                     message:@"Chào mừng bạn đến với ShimaStyle! Tinh chỉnh này sẽ mang trải nghiệm thông báo Dynamic Island tuyệt đẹp và mượt mà nhất lên thiết bị của bạn. Chúc bạn sử dụng vui vẻ!"
+                                                     appName:@"Cài đặt"
                                                         icon:icon
                                             bundleIdentifier:@"com.apple.Preferences"];
         });
