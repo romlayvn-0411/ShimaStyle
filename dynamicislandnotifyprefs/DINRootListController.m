@@ -16,6 +16,35 @@
     return UITableViewStyleInsetGrouped; // Sử dụng giao diện bo góc chuẩn iOS 18+
 }
 
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    
+    // 1. Tạo một View chứa Header với chiều cao 160
+    UIView *headerView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, 160)];
+    
+    // 2. Khởi tạo đối tượng Ảnh (ImageView)
+    UIImageView *logoView = [[UIImageView alloc] init];
+    logoView.contentMode = UIViewContentModeScaleAspectFit; // Giữ nguyên tỉ lệ ảnh
+    logoView.translatesAutoresizingMaskIntoConstraints = NO;
+    
+    // 3. Đọc file "logo.png" từ thư mục Resources của Cài đặt
+    NSBundle *bundle = [NSBundle bundleForClass:[self class]];
+    NSString *imagePath = [bundle pathForResource:@"logo" ofType:@"png"];
+    logoView.image = [UIImage imageWithContentsOfFile:imagePath];
+    
+    // 4. Căn giữa Logo vào trong Header
+    [headerView addSubview:logoView];
+    [NSLayoutConstraint activateConstraints:@[
+        [logoView.centerXAnchor constraintEqualToAnchor:headerView.centerXAnchor],
+        [logoView.centerYAnchor constraintEqualToAnchor:headerView.centerYAnchor],
+        [logoView.widthAnchor constraintEqualToConstant:120], // Kích thước hiển thị 120x120
+        [logoView.heightAnchor constraintEqualToConstant:120],
+    ]];
+    
+    // 5. Đẩy Header lên đầu trang Cài đặt (phía trên các ô tuỳ chọn)
+    [self.table setTableHeaderView:headerView];
+}
+
 - (UIView *)headerView {
     UILabel *label = [[UILabel alloc] init];
     label.text = @"ShimaStyle";

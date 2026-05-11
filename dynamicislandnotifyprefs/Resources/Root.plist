@@ -9,9 +9,7 @@
             <key>cell</key>
             <string>PSGroupCell</string>
             <key>label</key>
-            <string>Cấu hình chung</string>
-            <key>footerText</key>
-            <string>Bật/tắt Tweak và thay thế thông báo mặc định của hệ thống.</string>
+            <string>Cấu hình chung (General)</string>
         </dict>
         <dict>
             <key>cell</key>
@@ -23,22 +21,7 @@
             <key>key</key>
             <string>enabled</string>
             <key>label</key>
-            <string>Kích hoạt ShimaStyle</string>
-            <key>PostNotification</key>
-            <string>com.34306.shimastyle/prefsChanged</string>
-        </dict>
-
-        <dict>
-            <key>cell</key>
-            <string>PSSwitchCell</string>
-            <key>default</key>
-            <true/>
-            <key>defaults</key>
-            <string>com.34306.shimastyle</string>
-            <key>key</key>
-            <string>notificationEnabled</string>
-            <key>label</key>
-            <string>Thay thế thông báo gốc</string>
+            <string>Kích hoạt Tweak</string>
             <key>PostNotification</key>
             <string>com.34306.shimastyle/prefsChanged</string>
         </dict>
@@ -56,9 +39,13 @@
             <key>cell</key>
             <string>PSGroupCell</string>
             <key>label</key>
-            <string>Kiểu dáng hiển thị</string>
-            <key>footerText</key>
-            <string>Lựa chọn bố cục hiển thị phù hợp với sở thích của bạn.</string>
+            <string>Hiển thị &amp; Giao diện</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSStaticTextCell</string>
+            <key>label</key>
+            <string>Kiểu dáng khung:</string>
         </dict>
         <dict>
             <key>cell</key>
@@ -76,13 +63,11 @@
             <key>PostNotification</key>
             <string>com.34306.shimastyle/prefsChanged</string>
         </dict>
-
-        <!-- MÀU SẮC VĂN BẢN (TEXT COLOR) -->
         <dict>
             <key>cell</key>
-            <string>PSGroupCell</string>
+            <string>PSStaticTextCell</string>
             <key>label</key>
-            <string>Màu sắc văn bản</string>
+            <string>Màu sắc văn bản:</string>
         </dict>
         <dict>
             <key>cell</key>
@@ -106,9 +91,13 @@
             <key>cell</key>
             <string>PSGroupCell</string>
             <key>label</key>
-            <string>Thời gian tự động đóng</string>
-            <key>footerText</key>
-            <string>Thời gian thông báo hiển thị trên màn hình trước khi tự động thu nhỏ.</string>
+            <string>Thời gian &amp; Hoạt ảnh</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSStaticTextCell</string>
+            <key>label</key>
+            <string>Thời gian hiển thị (giây):</string>
         </dict>
         <dict>
             <key>cell</key>
@@ -128,15 +117,11 @@
             <key>PostNotification</key>
             <string>com.34306.shimastyle/prefsChanged</string>
         </dict>
-
-        <!-- HOẠT ẢNH (ANIMATION) -->
         <dict>
             <key>cell</key>
-            <string>PSGroupCell</string>
+            <string>PSStaticTextCell</string>
             <key>label</key>
-            <string>Tốc độ hoạt ảnh</string>
-            <key>footerText</key>
-            <string>Tốc độ bung mở và thu nhỏ của khung Dynamic Island (Mặc định: 0.45s).</string>
+            <string>Tốc độ bung mở (giây):</string>
         </dict>
         <dict>
             <key>cell</key>
@@ -162,9 +147,15 @@
             <key>cell</key>
             <string>PSGroupCell</string>
             <key>label</key>
-            <string>Căn chỉnh vị trí dọc</string>
+            <string>Căn chỉnh vị trí hiển thị</string>
             <key>footerText</key>
-            <string>Kéo thanh trượt để đẩy khung thông báo xuống thấp hơn, giúp tránh bị che khuất bởi cụm Camera/Tai thỏ.</string>
+            <string>Điều chỉnh trục Y (Dọc) để tránh dính vào Camera nguyên bản. Điều chỉnh trục X/Y (Ngang) để dịch chuyển khi đang xem Video hoặc chơi Game.</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSStaticTextCell</string>
+            <key>label</key>
+            <string>Trục Y Dọc (Lên / Xuống):</string>
         </dict>
         <dict>
             <key>cell</key>
@@ -184,13 +175,11 @@
             <key>PostNotification</key>
             <string>com.34306.shimastyle/prefsChanged</string>
         </dict>
-
-        <!-- VỊ TRÍ CHẾ ĐỘ NGANG (LANDSCAPE OFFSET) -->
         <dict>
             <key>cell</key>
-            <string>PSGroupCell</string>
+            <string>PSStaticTextCell</string>
             <key>label</key>
-            <string>Vị trí ngang: Trục X (Trái / Phải)</string>
+            <string>Trục X Ngang (Trái / Phải):</string>
         </dict>
         <dict>
             <key>cell</key>
@@ -212,11 +201,9 @@
         </dict>
         <dict>
             <key>cell</key>
-            <string>PSGroupCell</string>
+            <string>PSStaticTextCell</string>
             <key>label</key>
-            <string>Vị trí ngang: Trục Y (Lên / Xuống)</string>
-            <key>footerText</key>
-            <string>Căn chỉnh vị trí thông báo khi thiết bị đang xoay ngang. Mặc định khung sẽ tự bám sát vào góc tai thỏ/Camera để không che khuất màn hình.</string>
+            <string>Trục Y Ngang (Lên / Xuống):</string>
         </dict>
         <dict>
             <key>cell</key>
@@ -242,9 +229,7 @@
             <key>cell</key>
             <string>PSGroupCell</string>
             <key>label</key>
-            <string>Hình nền &amp; Độ mờ</string>
-            <key>footerText</key>
-            <string>Độ mờ kính (Blur) áp dụng cho nền mặc định. Nếu bật Ảnh nền riêng, độ mờ ảnh sẽ được sử dụng.</string>
+            <string>Cấu hình Nền &amp; Độ mờ</string>
         </dict>
         <dict>
             <key>cell</key>
@@ -276,9 +261,9 @@
         </dict>
         <dict>
             <key>cell</key>
-            <string>PSGroupCell</string>
+            <string>PSStaticTextCell</string>
             <key>label</key>
-            <string>Độ mờ kính (Blur) hệ thống</string>
+            <string>Độ mờ Kính (Blur) mặc định:</string>
         </dict>
         <dict>
             <key>cell</key>
@@ -300,9 +285,9 @@
         </dict>
         <dict>
             <key>cell</key>
-            <string>PSGroupCell</string>
+            <string>PSStaticTextCell</string>
             <key>label</key>
-            <string>Độ mờ Ảnh/Video nền</string>
+            <string>Độ mờ Ảnh/Video tuỳ chỉnh:</string>
         </dict>
         <dict>
             <key>cell</key>
@@ -346,8 +331,8 @@
             <key>cell</key>
             <string>PSGroupCell</string>
             <key>footerText</key>
-            <string>ShimaStyle v1.0.3
-Hỗ trợ iOS 16 - 26.</string>
+            <string>ShimaStyle v1.0.4
+Remake by Romlayvn - Hỗ trợ iOS 16.</string>
             <key>footerAlignment</key>
             <integer>1</integer>
         </dict>

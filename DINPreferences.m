@@ -29,7 +29,7 @@ static NSString *const kPrefsDomain = @"com.34306.shimastyle";
     }
 
     _enabled = prefs[@"enabled"] ? [prefs[@"enabled"] boolValue] : YES;
-    _notificationEnabled = prefs[@"notificationEnabled"] ? [prefs[@"notificationEnabled"] boolValue] : YES;
+    _notificationEnabled = YES; // Khóa cứng thành YES để lược bỏ nút bấm thừa trên giao diện
     _customBackgroundEnabled = prefs[@"customBackgroundEnabled"] ? [prefs[@"customBackgroundEnabled"] boolValue] : NO;
     
     NSString *bgPath = prefs[@"customBackgroundImagePath"];
