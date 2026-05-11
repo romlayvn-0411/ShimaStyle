@@ -164,7 +164,7 @@ static UIImage *dinAppIcon(NSString *bundleIdentifier) {
                     if (descriptor) {
                         id isImage = ((id (*)(id, SEL, id))objc_msgSend)(icon, sel_registerName("imageForImageDescriptor:"), descriptor);
                         if (isImage) {
-                            CGImageRef cgImage = (CGImageRef)((id (*)(id, SEL))objc_msgSend)(isImage, sel_registerName("CGImage"));
+                            CGImageRef cgImage = (__bridge CGImageRef)((id (*)(id, SEL))objc_msgSend)(isImage, sel_registerName("CGImage"));
                             if (cgImage) {
                                 foundIcon = [UIImage imageWithCGImage:cgImage scale:UIScreen.mainScreen.scale orientation:UIImageOrientationUp];
                             }
