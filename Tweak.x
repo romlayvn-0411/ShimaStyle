@@ -69,6 +69,18 @@
 @end
 
 // ============================================================================
+// MARK: - Rate Limiting
+// ============================================================================
+
+static NSDate *sLastNotificationTime = nil;
+static NSTimeInterval const kMinNotificationInterval = 0.2;
+
+static BOOL dinShouldThrottle(void) {
+    if (!sLastNotificationTime) return NO;
+    return [[NSDate date] timeIntervalSinceDate:sLastNotificationTime] < kMinNotificationInterval;
+}
+
+// ============================================================================
 // MARK: - Helper: Lock Screen & CoverSheet State
 // ============================================================================
 
@@ -894,54 +906,66 @@ static void dinReloadLandscapeOffsets() {
 // MARK: - Hooks
 // ============================================================================
 
-%hook NCNotificationBannerDestination
-- (void)postNotificationRequest:(id)arg1 {
+%hook NCNotificationDispatcher
+
+- (void)postNotificationWithRequest:(id)request {
     DINPreferences *prefs = [DINPreferences sharedInstance];
-    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) {
-        [DINOverlayManager presentNotificationFromRequest:arg1];
+    if (!prefs.enabled || !prefs.notificationEnabled) {
+        %orig;
         return;
     }
+
+    if (dinShouldThrottle()) {
+        %orig;
+        return;
+    }
+    sLastNotificationTime = [NSDate date];
+
+    // Gọi %orig NGAY LẬP TỨC để hệ thống lưu lịch sử, phát âm thanh và rung mượt mà
+    %orig; 
+
+    if (!dinIsDeviceLockedOrInCoverSheet()) {
+        [DINOverlayManager presentNotificationFromRequest:request];
+    }
+}
+
+- (void)modifyNotificationWithRequest:(id)request {
+    %orig;
+    DINPreferences *prefs = [DINPreferences sharedInstance];
+    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) {
+        [DINOverlayManager presentNotificationFromRequest:request];
+    }
+}
+
+%end
+
+// --- Chặn Banner mặc định của iOS ---
+
+%hook SBNCAlertingController
+- (BOOL)alertDispatcher:(id)arg1 shouldPresentAlertForNotificationRequest:(id)arg2 {
+    DINPreferences *prefs = [DINPreferences sharedInstance];
+    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) return NO;
+    return %orig;
+}
+- (void)alertDispatcher:(id)arg1 postAlertForNotificationRequest:(id)arg2 {
+    DINPreferences *prefs = [DINPreferences sharedInstance];
+    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) return;
     %orig;
 }
-- (void)modifyNotificationRequest:(id)arg1 {
+%end
+
+%hook NCNotificationBannerDestination
+- (BOOL)canReceiveNotificationRequest:(id)arg1 {
     DINPreferences *prefs = [DINPreferences sharedInstance];
-    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) {
-        [DINOverlayManager presentNotificationFromRequest:arg1];
-        return;
-    }
-    %orig;
+    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) return NO;
+    return %orig;
 }
 %end
 
 %hook SBNotificationBannerDestination
-- (void)postNotificationRequest:(id)arg1 {
+- (BOOL)canReceiveNotificationRequest:(id)arg1 {
     DINPreferences *prefs = [DINPreferences sharedInstance];
-    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) {
-        [DINOverlayManager presentNotificationFromRequest:arg1];
-        return;
-    }
-    %orig;
-}
-- (void)modifyNotificationRequest:(id)arg1 {
-    DINPreferences *prefs = [DINPreferences sharedInstance];
-    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) {
-        [DINOverlayManager presentNotificationFromRequest:arg1];
-        return;
-    }
-    %orig;
-}
-%end
-
-// --- Ultimate Fail-safe chặn thông báo gốc thông qua BannerKit ---
-%hook BNBannerSource
-- (BOOL)postPresentable:(id)arg1 options:(id)arg2 userInfo:(id)arg3 error:(id *)arg4 {
-    DINPreferences *prefs = [DINPreferences sharedInstance];
-    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) {
-        // Kiểm tra xem đối tượng chuẩn bị vẽ lên màn hình có phải là Thông báo không
-        if ([arg1 respondsToSelector:@selector(notificationRequest)]) {
-            return YES; // Giả vờ đã hiển thị thành công để hệ thống không báo lỗi
-        }
-    }
+    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) return NO;
     return %orig;
 }
 %end
@@ -949,59 +973,26 @@ static void dinReloadLandscapeOffsets() {
 // --- Chặn thông báo nguyên bản của Dynamic Island (System Aperture) ---
 
 %hook SBNCSystemApertureNotificationDestination
-- (void)postNotificationRequest:(id)arg1 {
+- (BOOL)canReceiveNotificationRequest:(id)arg1 {
     DINPreferences *prefs = [DINPreferences sharedInstance];
-    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) {
-        [DINOverlayManager presentNotificationFromRequest:arg1];
-        return;
-    }
-    %orig;
-}
-- (void)modifyNotificationRequest:(id)arg1 {
-    DINPreferences *prefs = [DINPreferences sharedInstance];
-    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) {
-        [DINOverlayManager presentNotificationFromRequest:arg1];
-        return;
-    }
-    %orig;
+    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) return NO;
+    return %orig;
 }
 %end
 
 %hook SBSystemApertureNotificationDestination
-- (void)postNotificationRequest:(id)arg1 {
+- (BOOL)canReceiveNotificationRequest:(id)arg1 {
     DINPreferences *prefs = [DINPreferences sharedInstance];
-    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) {
-        [DINOverlayManager presentNotificationFromRequest:arg1];
-        return;
-    }
-    %orig;
-}
-- (void)modifyNotificationRequest:(id)arg1 {
-    DINPreferences *prefs = [DINPreferences sharedInstance];
-    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) {
-        [DINOverlayManager presentNotificationFromRequest:arg1];
-        return;
-    }
-    %orig;
+    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) return NO;
+    return %orig;
 }
 %end
 
 %hook NCNotificationSystemApertureDestination
-- (void)postNotificationRequest:(id)arg1 {
+- (BOOL)canReceiveNotificationRequest:(id)arg1 {
     DINPreferences *prefs = [DINPreferences sharedInstance];
-    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) {
-        [DINOverlayManager presentNotificationFromRequest:arg1];
-        return;
-    }
-    %orig;
-}
-- (void)modifyNotificationRequest:(id)arg1 {
-    DINPreferences *prefs = [DINPreferences sharedInstance];
-    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) {
-        [DINOverlayManager presentNotificationFromRequest:arg1];
-        return;
-    }
-    %orig;
+    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) return NO;
+    return %orig;
 }
 %end
 
