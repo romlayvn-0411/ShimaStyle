@@ -282,4 +282,11 @@
     }
 }
 
+#pragma mark - Dummy Implementations (Declared in Header)
+
+- (void)addPulsingAnimationWithDuration:(NSTimeInterval)duration {}
+- (void)stopPulsingAnimation {}
+- (void)applyVibrantBlurEffect {}
+- (void)updateAppearanceForTraitCollection:(UITraitCollection *)traitCollection {}
+
 @end
