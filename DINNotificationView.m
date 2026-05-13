@@ -282,47 +282,4 @@
     }
 }
 
-#pragma mark - Additional Animation & Styling Methods
-
-// Pulsing animation cho notification
-- (void)addPulsingAnimationWithDuration:(NSTimeInterval)duration {
-    CABasicAnimation *pulse = [CABasicAnimation animationWithKeyPath:@"opacity"];
-    pulse.fromValue = @0.7;
-    pulse.toValue = @1.0;
-    pulse.duration = duration;
-    pulse.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseInEaseOut];
-    pulse.autoreverses = YES;
-    pulse.repeatCount = HUGE_VALF;
-    [self.layer addAnimation:pulse forKey:@"DINPulsing"];
-}
-
-// Stop pulsing animation
-- (void)stopPulsingAnimation {
-    [self.layer removeAnimationForKey:@"DINPulsing"];
-}
-
-// Apply vibrant blur effect
-- (void)applyVibrantBlurEffect {
-    if (@available(iOS 15.0, *)) {
-        UIBlurEffect *blur = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemUltraThinMaterial];
-        UIVisualEffectView *effectView = [[UIVisualEffectView alloc] initWithEffect:blur];
-        effectView.frame = self.bounds;
-        effectView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-        [self insertSubview:effectView belowSubview:_iconImageView];
-    }
-}
-
-// Update appearance based on dark mode
-- (void)updateAppearanceForTraitCollection:(UITraitCollection *)traitCollection {
-    if (@available(iOS 13.0, *)) {
-        if (traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark) {
-            // Dark mode adjustments
-            self.layer.shadowColor = [UIColor whiteColor].CGColor;
-        } else {
-            // Light mode adjustments
-            self.layer.shadowColor = [UIColor blackColor].CGColor;
-        }
-    }
-}
-
 @end

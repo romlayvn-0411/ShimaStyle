@@ -324,12 +324,6 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
 }
 
 // ============================================================================
-// MARK: - Forward Declarations
-// ============================================================================
-
-static void dinAddDismissGesture(UIView *containerView, UIViewController *hostVC);
-
-// ============================================================================
 // MARK: - Landscape Offset Preferences Cache
 // ============================================================================
 
@@ -442,10 +436,7 @@ static void dinReloadLandscapeOffsets() {
         containerView.tag = 34306;
         containerView.clipsToBounds = YES;
         containerView.layer.cornerCurve = kCACornerCurveContinuous;
-        containerView.userInteractionEnabled = YES; // Enable for gesture recognition
-        
-        // Add gesture recognizers
-        dinAddDismissGesture(containerView, self);
+        containerView.userInteractionEnabled = NO; // Cho phép cảm ứng đi xuyên qua để iOS tự xử lý Vuốt/Chạm
 
         // Vẽ nền (Background)
         if (prefs.customBackgroundEnabled && prefs.customBackgroundImagePath) {
@@ -611,23 +602,6 @@ static void dinReloadLandscapeOffsets() {
 %end
 
 // ============================================================================
-// MARK: - Gesture Handling for Notification Dismiss
-// ============================================================================
-
-// Add swipe and tap gestures to notification for user interaction
-static void dinAddDismissGesture(UIView *containerView, UIViewController *hostVC) {
-    // Swipe Up to dismiss
-    UISwipeGestureRecognizer *swipeUp = [[UISwipeGestureRecognizer alloc] initWithTarget:hostVC action:@selector(din_dismissNotification)];
-    swipeUp.direction = UISwipeGestureRecognizerDirectionUp;
-    swipeUp.delegate = (id)hostVC; // Assuming VC implements UIGestureRecognizerDelegate
-    [containerView addGestureRecognizer:swipeUp];
-    
-    // Tap to trigger action
-    UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:hostVC action:@selector(din_tapNotification)];
-    [containerView addGestureRecognizer:tap];
-}
-
-// ============================================================================
 // MARK: - Test Notification Dispatcher Grabber
 // ============================================================================
 
@@ -658,65 +632,9 @@ static __weak id sharedDispatcher = nil; // Chuẩn hóa SDK 18.5: Dùng __weak 
     %orig;
 }
 
-- (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer {
-    return YES; // Allow gesture to begin
-}
-
-- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
-    return NO; // Don't allow simultaneous gestures
-}
-
-%end
-
-// ============================================================================
-// MARK: - Notification Dismissal Handler Extension
-// ============================================================================
-
-@interface NCNotificationShortLookViewController (DINGestures)
-- (void)din_dismissNotification;
-- (void)din_tapNotification;
-@end
-
-%hook NCNotificationShortLookViewController
-
-- (void)din_dismissNotification {
-    // Animate out with spring effect
-    UIView *containerView = [self.view viewWithTag:34306];
-    if (containerView) {
-        DINPreferences *prefs = [DINPreferences sharedInstance];
-        [UIView animateWithDuration:prefs.animationDuration * 0.5 delay:0 options:UIViewAnimationOptionCurveEaseIn animations:^{
-            containerView.alpha = 0.0;
-            containerView.transform = CGAffineTransformMakeScale(0.5, 0.5);
-        } completion:^(BOOL finished) {
-            [containerView removeFromSuperview];
-        }];
-    }
-}
-
-- (void)din_tapNotification {
-    // Handle tap action (could open app or perform action)
-    UIView *containerView = [self.view viewWithTag:34306];
-    if (containerView) {
-        // Add tap feedback
-        UIImpactFeedbackGenerator *feedback = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleMedium];
-        [feedback prepare];
-        [feedback impactOccurred];
-    }
-}
-
-// UIGestureRecognizerDelegate methods for gesture handling
-- (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer {
-    return YES;
-}
-
-- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
-    return YES;
-}
-
 %end
 
 static void *kDINCustomBgViewKey = &kDINCustomBgViewKey;
-static void *kDINBorderLayerKey = &kDINBorderLayerKey;
 
 // ============================================================================
 // MARK: - Advanced Memory Management & Performance Optimizations
@@ -740,39 +658,6 @@ static BOOL dinIsDynamicIslandSupported() {
         }
     }
     return NO;
-}
-
-// Tối ưu 6: Hàm lấy độ phân giải chuẩn của thiết bị
-static CGFloat dinGetDeviceScale() {
-    return UIScreen.mainScreen.scale;
-}
-
-// Tối ưu 7: Hàm kiểm tra xem Tweak có được enabled không
-static BOOL dinIsTweakEnabled() {
-    DINPreferences *prefs = [DINPreferences sharedInstance];
-    return prefs.enabled && prefs.notificationEnabled;
-}
-
-// Tối ưu 8: Hàm tính toán shadow mà không tác động hiệu năng quá lớn
-static void dinOptimizeShadowPerformance(CALayer *layer) {
-    if (layer) {
-        // Pre-render shadow path để tránh rendering delay
-        layer.shouldRasterize = NO; // Tránh quá-rasterize
-        layer.shadowOpacity = 0.0; // Start invisible
-        layer.masksToBounds = NO;
-    }
-}
-
-// Tối ưu 9: Thread-safe preference cache
-static NSMutableDictionary *sDINPrefCache = nil;
-static dispatch_queue_t sDINPrefCacheQueue = nil;
-
-static void dinInitPrefCache() {
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        sDINPrefCache = [[NSMutableDictionary alloc] init];
-        sDINPrefCacheQueue = dispatch_queue_create("com.romlayvn.shimareborn.prefcache", DISPATCH_QUEUE_SERIAL);
-    });
 }
 
 // Custom background + Border for Real Dynamic Island Content
@@ -867,22 +752,10 @@ static void dinInitPrefCache() {
 %end
 
 // ============================================================================
-// MARK: - Memory & Performance Management
-// ============================================================================
-
-static void dinHandleMemoryWarning() {
-    // Clear image and app name caches to free memory
-    // This will be called when system memory is low
-    NSLog(@"[ShimaReborn] Memory warning received, clearing caches...");
-}
-
-// ============================================================================
 // MARK: - Constructor
 // ============================================================================
 
 %ctor {
-    dinInitPrefCache(); // Initialize thread-safe cache
-    
     // Check if Dynamic Island is supported before initializing
     if (!dinIsDynamicIslandSupported()) {
         NSLog(@"[ShimaReborn] Warning: This device may not have Dynamic Island support. Some features may not work correctly.");
@@ -897,11 +770,6 @@ static void dinHandleMemoryWarning() {
             [[DINPreferences sharedInstance] reloadPreferences];
             dinReloadLandscapeOffsets();
         });
-
-    // Register memory warning handler
-    [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidReceiveMemoryWarningNotification object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification * _Nonnull note) {
-        dinHandleMemoryWarning();
-    }];
 
     int testToken = 0;
     notify_register_dispatch("com.romlayvn.shimareborn/testNotification",
