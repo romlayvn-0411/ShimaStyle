@@ -324,6 +324,12 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
 }
 
 // ============================================================================
+// MARK: - Forward Declarations
+// ============================================================================
+
+static void dinAddDismissGesture(UIView *containerView, UIViewController *hostVC);
+
+// ============================================================================
 // MARK: - Landscape Offset Preferences Cache
 // ============================================================================
 
@@ -720,9 +726,18 @@ static void *kDINBorderLayerKey = &kDINBorderLayerKey;
 static BOOL dinIsDynamicIslandSupported() {
     // Check iOS version and hardware capability
     if (@available(iOS 16.1, *)) {
-        UIScreen *screen = UIScreen.mainScreen;
-        // Dynamic Island is present if safeAreaInsets.top is larger than standard notch
-        return screen.safeAreaInsets.top >= 54.0;
+        UIWindowScene *windowScene = nil;
+        for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
+            if ([scene isKindOfClass:[UIWindowScene class]]) {
+                windowScene = (UIWindowScene *)scene;
+                break;
+            }
+        }
+        
+        if (windowScene) {
+            // Dynamic Island is present if safeAreaInsets.top is larger than standard notch
+            return windowScene.windows.firstObject.safeAreaInsets.top >= 54.0;
+        }
     }
     return NO;
 }
