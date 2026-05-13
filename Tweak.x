@@ -321,7 +321,7 @@ static void dinReloadLandscapeOffsets() {
     return %orig;
 }
 
-- (void)viewWillLayoutSubviews {
+- (void)viewDidLayoutSubviews {
     %orig;
 
     DINPreferences *prefs = [DINPreferences sharedInstance];
@@ -344,6 +344,13 @@ static void dinReloadLandscapeOffsets() {
     }
     if (inScrollView) return;
     
+    // Chuẩn hóa SDK 18.5: Ép toàn bộ các lớp view cha không được cắt viền (để ShimaReborn có thể vẽ đè lên khu vực Tai thỏ an toàn trên iOS 16+)
+    UIView *sv = self.view;
+    while (sv) {
+        sv.clipsToBounds = NO;
+        sv = sv.superview;
+    }
+
     // Làm tàng hình toàn bộ Khung nền (PlatterView) và Bóng đổ nguyên bản của Apple
     UIView *platterView = self.view.superview;
     if (platterView) {
@@ -532,7 +539,7 @@ static void dinReloadLandscapeOffsets() {
 // MARK: - Test Notification Dispatcher Grabber
 // ============================================================================
 
-static id sharedDispatcher = nil;
+static __weak id sharedDispatcher = nil; // Chuẩn hóa SDK 18.5: Dùng __weak để an toàn bộ nhớ, tránh gây Crash SpringBoard
 
 %hook NCNotificationDispatcher
 
@@ -686,6 +693,7 @@ static void *kDINBorderLayerKey = &kDINBorderLayerKey;
                     if ([request respondsToSelector:@selector(setSectionIdentifier:)]) [request performSelector:@selector(setSectionIdentifier:) withObject:@"com.apple.Preferences"];
                     if ([request respondsToSelector:@selector(setNotificationIdentifier:)]) [request performSelector:@selector(setNotificationIdentifier:) withObject:[[NSUUID UUID] UUIDString]];
                     if ([request respondsToSelector:@selector(setContent:)]) [request performSelector:@selector(setContent:) withObject:content];
+                    if ([request respondsToSelector:@selector(setThreadIdentifier:)]) [request performSelector:@selector(setThreadIdentifier:) withObject:@"shimareborn.test"];
                     if ([request respondsToSelector:@selector(setTimestamp:)]) [request performSelector:@selector(setTimestamp:) withObject:[NSDate date]];
                     
                     // Bắt buộc phải có Options và Destinations trên iOS 16 thì thông báo mới được phép bung ra
@@ -708,9 +716,29 @@ static void *kDINBorderLayerKey = &kDINBorderLayerKey;
                 dispatch_async(dispatch_get_main_queue(), ^{
                     UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"ShimaReborn" message:@"Hệ thống chưa tải xong bộ nhận thông báo. Hãy chờ vài giây hoặc nhờ ai đó gửi 1 tin nhắn thật để Tweak ghi nhớ hệ thống!" preferredStyle:UIAlertControllerStyleAlert];
                     [alert addAction:[UIAlertAction actionWithTitle:@"Đã hiểu" style:UIAlertActionStyleDefault handler:nil]];
-                    UIWindow *keyWindow = [UIApplication sharedApplication].keyWindow;
-                    if (keyWindow && keyWindow.rootViewController) {
-                        [keyWindow.rootViewController presentViewController:alert animated:YES completion:nil];
+                    
+                    UIWindow *activeWindow = nil;
+                    for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
+                        if ([scene isKindOfClass:[UIWindowScene class]]) {
+                            for (UIWindow *window in ((UIWindowScene *)scene).windows) {
+                                if (window.isKeyWindow) {
+                                    activeWindow = window;
+                                    break;
+                                }
+                            }
+                        }
+                        if (activeWindow) break;
+                    }
+                    
+                    if (!activeWindow) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+                        activeWindow = [UIApplication sharedApplication].keyWindow;
+#pragma clang diagnostic pop
+                    }
+
+                    if (activeWindow && activeWindow.rootViewController) {
+                        [activeWindow.rootViewController presentViewController:alert animated:YES completion:nil];
                     }
                 });
             }
