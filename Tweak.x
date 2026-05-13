@@ -343,6 +343,19 @@ static void dinReloadLandscapeOffsets() {
         superview = superview.superview;
     }
     if (inScrollView) return;
+    
+    // Làm tàng hình toàn bộ Khung nền (PlatterView) và Bóng đổ nguyên bản của Apple
+    UIView *platterView = self.view.superview;
+    if (platterView) {
+        platterView.clipsToBounds = NO;
+        platterView.backgroundColor = [UIColor clearColor];
+        platterView.layer.shadowOpacity = 0;
+        for (UIView *sub in platterView.subviews) {
+            if ([NSStringFromClass([sub class]) containsString:@"Background"] || [NSStringFromClass([sub class]) containsString:@"Shadow"]) {
+                sub.alpha = 0.01;
+            }
+        }
+    }
 
     // Làm tàng hình nền nguyên bản của Apple (Để lại hiệu ứng đổ bóng ảo diệu của riêng ta)
     self.view.backgroundColor = [UIColor clearColor];
@@ -437,7 +450,7 @@ static void dinReloadLandscapeOffsets() {
             if (v.tag == 34306) continue;
             if ([v isKindOfClass:[UIImageView class]]) {
                 UIImage *img = ((UIImageView *)v).image;
-                if (img && img.size.width >= 15 && img.size.width == img.size.height) {
+                if (img && img.size.width >= 20 && img.size.width == img.size.height) { // Tăng size lên 20 để tránh bắt nhầm nút Đóng/Mở rộng
                     icon = img;
                     break;
                 }
@@ -465,6 +478,14 @@ static void dinReloadLandscapeOffsets() {
         [containerView addSubview:notifView];
 
         [self.view addSubview:containerView];
+        
+        // Thêm hiệu ứng Bung mở (Spring Bouncy) mượt mà cho lần hiển thị đầu tiên
+        containerView.transform = CGAffineTransformMakeScale(0.6, 0.6);
+        containerView.alpha = 0.0;
+        [UIView animateWithDuration:prefs.animationDuration delay:0 usingSpringWithDamping:0.65 initialSpringVelocity:1.2 options:UIViewAnimationOptionAllowUserInteraction | UIViewAnimationOptionCurveEaseOut animations:^{
+            containerView.transform = CGAffineTransformIdentity;
+            containerView.alpha = 1.0;
+        } completion:nil];
 
         // Khởi động chữ chạy (Marquee)
         if ([notifView respondsToSelector:@selector(startMarquee)]) {
@@ -528,6 +549,11 @@ static id sharedDispatcher = nil;
 - (id)initWithNotificationDestinations:(id)arg1 alertingController:(id)arg2 {
     sharedDispatcher = %orig;
     return sharedDispatcher;
+}
+
+- (void)postNotificationWithRequest:(id)arg1 {
+    sharedDispatcher = self; // Bắt lấy Dispatcher mỗi khi có 1 thông báo thật bay qua
+    %orig;
 }
 
 %end
@@ -651,8 +677,9 @@ static void *kDINBorderLayerKey = &kDINBorderLayerKey;
                 @try {
                     Class mutContentClass = objc_getClass("NCMutableNotificationContent");
                     id content = [[mutContentClass alloc] init];
+                    if ([content respondsToSelector:@selector(setHeader:)]) [content performSelector:@selector(setHeader:) withObject:@"ShimaReborn"];
                     if ([content respondsToSelector:@selector(setTitle:)]) [content performSelector:@selector(setTitle:) withObject:@"ShimaReborn"];
-                    if ([content respondsToSelector:@selector(setMessage:)]) [content performSelector:@selector(setMessage:) withObject:@"Thông báo thử nghiệm Native đang hoạt động hoàn hảo!"];
+                    if ([content respondsToSelector:@selector(setMessage:)]) [content performSelector:@selector(setMessage:) withObject:@"Tuyệt vời! Hiển thị Native đang hoạt động hoàn hảo!"];
 
                     Class mutRequestClass = objc_getClass("NCMutableNotificationRequest");
                     id request = [[mutRequestClass alloc] init];
@@ -660,11 +687,32 @@ static void *kDINBorderLayerKey = &kDINBorderLayerKey;
                     if ([request respondsToSelector:@selector(setNotificationIdentifier:)]) [request performSelector:@selector(setNotificationIdentifier:) withObject:[[NSUUID UUID] UUIDString]];
                     if ([request respondsToSelector:@selector(setContent:)]) [request performSelector:@selector(setContent:) withObject:content];
                     if ([request respondsToSelector:@selector(setTimestamp:)]) [request performSelector:@selector(setTimestamp:) withObject:[NSDate date]];
+                    
+                    // Bắt buộc phải có Options và Destinations trên iOS 16 thì thông báo mới được phép bung ra
+                    Class mutOptionsClass = objc_getClass("NCMutableNotificationOptions");
+                    if (mutOptionsClass) {
+                        id options = [[mutOptionsClass alloc] init];
+                        if ([options respondsToSelector:@selector(setPreemptsPresentedNotification:)]) [options performSelector:@selector(setPreemptsPresentedNotification:) withObject:@(YES)];
+                        if ([request respondsToSelector:@selector(setOptions:)]) [request performSelector:@selector(setOptions:) withObject:options];
+                    }
+                    if ([request respondsToSelector:@selector(setDestinations:)]) {
+                        [request performSelector:@selector(setDestinations:) withObject:[NSSet setWithObject:@"SBNotificationDestinationBanner"]];
+                    }
 
                     if ([sharedDispatcher respondsToSelector:@selector(postNotificationWithRequest:)]) {
                         [sharedDispatcher performSelector:@selector(postNotificationWithRequest:) withObject:request];
                     }
                 } @catch (NSException *e) {}
+            } else {
+                // Fallback nếu Dispatcher chưa kịp nạp vào RAM
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"ShimaReborn" message:@"Hệ thống chưa tải xong bộ nhận thông báo. Hãy chờ vài giây hoặc nhờ ai đó gửi 1 tin nhắn thật để Tweak ghi nhớ hệ thống!" preferredStyle:UIAlertControllerStyleAlert];
+                    [alert addAction:[UIAlertAction actionWithTitle:@"Đã hiểu" style:UIAlertActionStyleDefault handler:nil]];
+                    UIWindow *keyWindow = [UIApplication sharedApplication].keyWindow;
+                    if (keyWindow && keyWindow.rootViewController) {
+                        [keyWindow.rootViewController presentViewController:alert animated:YES completion:nil];
+                    }
+                });
             }
         });
 
