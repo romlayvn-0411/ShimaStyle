@@ -5,7 +5,7 @@ INSTALL_TARGET_PROCESSES = SpringBoard
 
 include $(THEOS)/makefiles/common.mk
 
-TWEAK_NAME = ShimaStyle
+TWEAK_NAME = ShimaReborn
 $(TWEAK_NAME)_FILES = Tweak.x DINNotificationView.m DINPreferences.m
 $(TWEAK_NAME)_CFLAGS = -fobjc-arc -Wno-unused-variable -Wno-nullability-completeness
 $(TWEAK_NAME)_FRAMEWORKS = UIKit Foundation CoreGraphics QuartzCore CoreServices AVFoundation ImageIO

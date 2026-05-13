@@ -17,13 +17,13 @@
             <key>default</key>
             <true/>
             <key>defaults</key>
-            <string>com.34306.shimastyle</string>
+            <string>com.romlayvn.shimareborn</string>
             <key>key</key>
             <string>enabled</string>
             <key>label</key>
             <string>Kích hoạt Tweak</string>
             <key>PostNotification</key>
-            <string>com.34306.shimastyle/prefsChanged</string>
+            <string>com.romlayvn.shimareborn/prefsChanged</string>
         </dict>
         <dict>
             <key>cell</key>
@@ -53,7 +53,7 @@
             <key>default</key>
             <integer>0</integer>
             <key>defaults</key>
-            <string>com.34306.shimastyle</string>
+            <string>com.romlayvn.shimareborn</string>
             <key>key</key>
             <string>notificationStyle</string>
             <key>validValues</key>
@@ -61,7 +61,7 @@
             <key>validTitles</key>
             <array> <string>Tiêu chuẩn</string> <string>Nhỏ gọn</string> <string>Tối giản</string> </array>
             <key>PostNotification</key>
-            <string>com.34306.shimastyle/prefsChanged</string>
+            <string>com.romlayvn.shimareborn/prefsChanged</string>
         </dict>
         <dict>
             <key>cell</key>
@@ -75,7 +75,7 @@
             <key>default</key>
             <integer>0</integer>
             <key>defaults</key>
-            <string>com.34306.shimastyle</string>
+            <string>com.romlayvn.shimareborn</string>
             <key>key</key>
             <string>textColorStyle</string>
             <key>validValues</key>
@@ -83,7 +83,7 @@
             <key>validTitles</key>
             <array> <string>Chữ tự động</string> <string>Chữ sáng</string> <string>Chữ tối</string> </array>
             <key>PostNotification</key>
-            <string>com.34306.shimastyle/prefsChanged</string>
+            <string>com.romlayvn.shimareborn/prefsChanged</string>
         </dict>
 
         <!-- THỜI GIAN (DURATION) -->
@@ -105,7 +105,7 @@
             <key>default</key>
             <real>5.0</real>
             <key>defaults</key>
-            <string>com.34306.shimastyle</string>
+            <string>com.romlayvn.shimareborn</string>
             <key>key</key>
             <string>dismissDuration</string>
             <key>min</key>
@@ -115,7 +115,7 @@
             <key>showValue</key>
             <true/>
             <key>PostNotification</key>
-            <string>com.34306.shimastyle/prefsChanged</string>
+            <string>com.romlayvn.shimareborn/prefsChanged</string>
         </dict>
         <dict>
             <key>cell</key>
@@ -129,7 +129,7 @@
             <key>default</key>
             <real>0.45</real>
             <key>defaults</key>
-            <string>com.34306.shimastyle</string>
+            <string>com.romlayvn.shimareborn</string>
             <key>key</key>
             <string>animationDuration</string>
             <key>min</key>
@@ -139,7 +139,7 @@
             <key>showValue</key>
             <true/>
             <key>PostNotification</key>
-            <string>com.34306.shimastyle/prefsChanged</string>
+            <string>com.romlayvn.shimareborn/prefsChanged</string>
         </dict>
 
         <!-- VỊ TRÍ (OFFSET) -->
@@ -163,7 +163,7 @@
             <key>default</key>
             <real>0.0</real>
             <key>defaults</key>
-            <string>com.34306.shimastyle</string>
+            <string>com.romlayvn.shimareborn</string>
             <key>key</key>
             <string>notificationYOffset</string>
             <key>min</key>
@@ -173,7 +173,7 @@
             <key>showValue</key>
             <true/>
             <key>PostNotification</key>
-            <string>com.34306.shimastyle/prefsChanged</string>
+            <string>com.romlayvn.shimareborn/prefsChanged</string>
         </dict>
         <dict>
             <key>cell</key>
@@ -187,7 +187,7 @@
             <key>default</key>
             <real>0.0</real>
             <key>defaults</key>
-            <string>com.34306.shimastyle</string>
+            <string>com.romlayvn.shimareborn</string>
             <key>key</key>
             <string>landscapeXOffset</string>
             <key>min</key>
@@ -197,7 +197,7 @@
             <key>showValue</key>
             <true/>
             <key>PostNotification</key>
-            <string>com.34306.shimastyle/prefsChanged</string>
+            <string>com.romlayvn.shimareborn/prefsChanged</string>
         </dict>
         <dict>
             <key>cell</key>
@@ -211,7 +211,7 @@
             <key>default</key>
             <real>0.0</real>
             <key>defaults</key>
-            <string>com.34306.shimastyle</string>
+            <string>com.romlayvn.shimareborn</string>
             <key>key</key>
             <string>landscapeYOffset</string>
             <key>min</key>
@@ -221,7 +221,7 @@
             <key>showValue</key>
             <true/>
             <key>PostNotification</key>
-            <string>com.34306.shimastyle/prefsChanged</string>
+            <string>com.romlayvn.shimareborn/prefsChanged</string>
         </dict>
 
         <!-- NỀN (BACKGROUND) -->
@@ -237,19 +237,19 @@
             <key>default</key>
             <false/>
             <key>defaults</key>
-            <string>com.34306.shimastyle</string>
+            <string>com.romlayvn.shimareborn</string>
             <key>key</key>
             <string>customBackgroundEnabled</string>
             <key>label</key>
             <string>Sử dụng ảnh nền riêng</string>
             <key>PostNotification</key>
-            <string>com.34306.shimastyle/prefsChanged</string>
+            <string>com.romlayvn.shimareborn/prefsChanged</string>
         </dict>
         <dict>
             <key>cell</key>
             <string>PSEditTextCell</string>
             <key>defaults</key>
-            <string>com.34306.shimastyle</string>
+            <string>com.romlayvn.shimareborn</string>
             <key>key</key>
             <string>customBackgroundImagePath</string>
             <key>label</key>
@@ -257,7 +257,7 @@
             <key>placeholder</key>
             <string>/var/jb/Library/DINBg.png</string>
             <key>PostNotification</key>
-            <string>com.34306.shimastyle/prefsChanged</string>
+            <string>com.romlayvn.shimareborn/prefsChanged</string>
         </dict>
         <dict>
             <key>cell</key>
@@ -271,7 +271,7 @@
             <key>default</key>
             <real>1.0</real>
             <key>defaults</key>
-            <string>com.34306.shimastyle</string>
+            <string>com.romlayvn.shimareborn</string>
             <key>key</key>
             <string>blurOpacity</string>
             <key>min</key>
@@ -281,7 +281,7 @@
             <key>showValue</key>
             <true/>
             <key>PostNotification</key>
-            <string>com.34306.shimastyle/prefsChanged</string>
+            <string>com.romlayvn.shimareborn/prefsChanged</string>
         </dict>
         <dict>
             <key>cell</key>
@@ -295,7 +295,7 @@
             <key>default</key>
             <real>1.0</real>
             <key>defaults</key>
-            <string>com.34306.shimastyle</string>
+            <string>com.romlayvn.shimareborn</string>
             <key>key</key>
             <string>backgroundOpacity</string>
             <key>min</key>
@@ -305,7 +305,7 @@
             <key>showValue</key>
             <true/>
             <key>PostNotification</key>
-            <string>com.34306.shimastyle/prefsChanged</string>
+            <string>com.romlayvn.shimareborn/prefsChanged</string>
         </dict>
 
         <!-- HỆ THỐNG -->
@@ -331,13 +331,13 @@
             <key>cell</key>
             <string>PSGroupCell</string>
             <key>footerText</key>
-            <string>ShimaStyle v1.0.4
+            <string>ShimaReborn v1.0.6.4
 Remake by Romlayvn - Hỗ trợ iOS 16.</string>
             <key>footerAlignment</key>
             <integer>1</integer>
         </dict>
     </array>
     <key>title</key>
-    <string>ShimaStyle</string>
+    <string>ShimaReborn</string>
 </dict>
 </plist>

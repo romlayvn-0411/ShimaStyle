@@ -1,6 +1,6 @@
 #import "DINPreferences.h"
 
-static NSString *const kPrefsDomain = @"com.34306.shimastyle";
+static NSString *const kPrefsDomain = @"com.romlayvn.shimareborn";
 
 @implementation DINPreferences
 
@@ -25,7 +25,7 @@ static NSString *const kPrefsDomain = @"com.34306.shimastyle";
         CFRelease(keyList);
     }
     if (!prefs) {
-        prefs = [NSDictionary dictionaryWithContentsOfFile:@"/var/jb/var/mobile/Library/Preferences/com.34306.shimastyle.plist"];
+        prefs = [NSDictionary dictionaryWithContentsOfFile:@"/var/jb/var/mobile/Library/Preferences/com.romlayvn.shimareborn.plist"];
     }
 
     _enabled = prefs[@"enabled"] ? [prefs[@"enabled"] boolValue] : YES;

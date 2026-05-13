@@ -18,7 +18,7 @@
 
 - (UIView *)headerView {
     UILabel *label = [[UILabel alloc] init];
-    label.text = @"ShimaStyle";
+    label.text = @"ShimaReborn";
     label.font = [UIFont boldSystemFontOfSize:17];
     label.textAlignment = NSTextAlignmentCenter;
     [label sizeToFit];
@@ -34,11 +34,11 @@
 
 - (void)setPreferenceValue:(id)value specifier:(PSSpecifier *)specifier {
     [super setPreferenceValue:value specifier:specifier];
-    notify_post("com.34306.shimastyle/prefsChanged");
+    notify_post("com.romlayvn.shimareborn/prefsChanged");
 }
 
 - (void)testNotification {
-    notify_post("com.34306.shimastyle/testNotification");
+    notify_post("com.romlayvn.shimareborn/testNotification");
 }
 
 - (void)respring {

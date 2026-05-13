@@ -31,10 +31,6 @@
 - (NCNotificationContent *)content;
 @end
 
-@interface NCNotificationDispatcher : NSObject
-- (void)postNotificationWithRequest:(NCNotificationRequest *)request;
-@end
-
 @interface SBApplication : NSObject
 - (NSString *)displayName;
 @end
@@ -47,127 +43,9 @@
 @interface SBSystemApertureContainerView : UIView
 @end
 
-@interface SBNCAlertingController : NSObject
+@interface NCNotificationShortLookViewController : UIViewController
+- (id)notificationRequest;
 @end
-
-@interface NCNotificationBannerDestination : NSObject
-@end
-
-@interface SBNotificationBannerDestination : NSObject
-@end
-
-@interface BNBannerSource : NSObject
-@end
-
-@interface SBNCSystemApertureNotificationDestination : NSObject
-@end
-
-@interface SBSystemApertureNotificationDestination : NSObject
-@end
-
-@interface NCNotificationSystemApertureDestination : NSObject
-@end
-
-@interface PKPushPayload : NSObject
-- (NSDictionary *)dictionaryPayload;
-@end
-
-// ============================================================================
-// MARK: - Rate Limiting
-// ============================================================================
-
-static NSDate *sLastNotificationTime = nil;
-static NSTimeInterval const kMinNotificationInterval = 0.2;
-
-static BOOL dinShouldThrottle(void) {
-    if (!sLastNotificationTime) return NO;
-    return [[NSDate date] timeIntervalSinceDate:sLastNotificationTime] < kMinNotificationInterval;
-}
-
-// ============================================================================
-// MARK: - Helper: Lock Screen & CoverSheet State
-// ============================================================================
-
-static BOOL dinIsDeviceLockedOrInCoverSheet(void) {
-    __block BOOL isLocked = NO;
-    dispatch_block_t getLockBlock = ^{
-        static Class s_SBLockScreenManagerClass = nil;
-        static dispatch_once_t onceTokenLock;
-        dispatch_once(&onceTokenLock, ^{ s_SBLockScreenManagerClass = objc_lookUpClass("SBLockScreenManager"); });
-        
-        if (s_SBLockScreenManagerClass) {
-            id lockScreenManager = ((id (*)(Class, SEL))objc_msgSend)(s_SBLockScreenManagerClass, sel_registerName("sharedInstance"));
-            if (lockScreenManager && [lockScreenManager respondsToSelector:@selector(isLockScreenVisible)]) {
-                isLocked = ((BOOL (*)(id, SEL))objc_msgSend)(lockScreenManager, @selector(isLockScreenVisible));
-            }
-        }
-    };
-    if ([NSThread isMainThread]) {
-        getLockBlock();
-    } else {
-        dispatch_sync(dispatch_get_main_queue(), getLockBlock); // Ép chạy an toàn trên luồng chính
-    }
-    return isLocked;
-}
-
-// --- Helper: Lấy BundleID của ứng dụng đang hiển thị trên màn hình ---
-static NSString *dinActiveAppBundleID(void) {
-    __block NSString *activeApp = nil;
-    dispatch_block_t getAppBlock = ^{
-        @try {
-            id sb = [UIApplication sharedApplication];
-            if ([sb respondsToSelector:@selector(_accessibilityFrontMostApplication)]) {
-                id app = [sb performSelector:@selector(_accessibilityFrontMostApplication)];
-                if (app && [app respondsToSelector:@selector(bundleIdentifier)]) {
-                    activeApp = [app performSelector:@selector(bundleIdentifier)];
-                }
-            }
-        } @catch (NSException *e) {}
-    };
-    if ([NSThread isMainThread]) {
-        getAppBlock();
-    } else {
-        dispatch_sync(dispatch_get_main_queue(), getAppBlock); // Tránh gây treo luồng nền của iOS
-    }
-    return activeApp;
-}
-
-// --- Helper: Lấy hướng xoay THỰC TẾ của ứng dụng đang mở ---
-static UIInterfaceOrientation dinGetActiveOrientation(void) {
-    __block UIInterfaceOrientation orientation = UIInterfaceOrientationPortrait;
-    dispatch_block_t getOrientationBlock = ^{
-        id sb = [UIApplication sharedApplication];
-        if ([sb respondsToSelector:sel_registerName("activeInterfaceOrientation")]) {
-            orientation = (UIInterfaceOrientation)((NSInteger (*)(id, SEL))objc_msgSend)(sb, sel_registerName("activeInterfaceOrientation"));
-        }
-    };
-    if ([NSThread isMainThread]) {
-        getOrientationBlock();
-    } else {
-        dispatch_sync(dispatch_get_main_queue(), getOrientationBlock);
-    }
-    return orientation;
-}
-
-// ============================================================================
-// MARK: - Bộ Lọc Hiển Thị Thông Minh (Smart Banner Filter)
-// ============================================================================
-
-static BOOL dinShouldShowCustomBanner(id request) {
-    DINPreferences *prefs = [DINPreferences sharedInstance];
-    if (!prefs.enabled || !prefs.notificationEnabled) return NO;
-    
-    if (dinIsDeviceLockedOrInCoverSheet()) return NO; // Đang ở Màn hình khóa -> Nhường hệ thống
-
-    NSString *bundleIdentifier = [request respondsToSelector:@selector(sectionIdentifier)] ? [request sectionIdentifier] : nil;
-    NSString *activeApp = dinActiveAppBundleID();
-    
-    if (bundleIdentifier && [bundleIdentifier isEqualToString:activeApp]) {
-        return NO; // Nhận tin nhắn từ app đang mở -> Nhường app tự hiện thông báo trong
-    }
-    
-    return YES;
-}
 
 // ============================================================================
 // MARK: - App Icon Helper
@@ -396,559 +274,116 @@ static CGFloat sLandscapeXOffset = 0.0;
 static CGFloat sLandscapeYOffset = 0.0;
 
 static void dinReloadLandscapeOffsets() {
-    CFPreferencesAppSynchronize((CFStringRef)@"com.34306.shimastyle");
-    NSNumber *xVal = (NSNumber *)CFBridgingRelease(CFPreferencesCopyAppValue((CFStringRef)@"landscapeXOffset", (CFStringRef)@"com.34306.shimastyle"));
+    CFPreferencesAppSynchronize((CFStringRef)@"com.romlayvn.shimareborn");
+    NSNumber *xVal = (NSNumber *)CFBridgingRelease(CFPreferencesCopyAppValue((CFStringRef)@"landscapeXOffset", (CFStringRef)@"com.romlayvn.shimareborn"));
     sLandscapeXOffset = xVal ? [xVal floatValue] : 0.0;
     
-    NSNumber *yVal = (NSNumber *)CFBridgingRelease(CFPreferencesCopyAppValue((CFStringRef)@"landscapeYOffset", (CFStringRef)@"com.34306.shimastyle"));
+    NSNumber *yVal = (NSNumber *)CFBridgingRelease(CFPreferencesCopyAppValue((CFStringRef)@"landscapeYOffset", (CFStringRef)@"com.romlayvn.shimareborn"));
     sLandscapeYOffset = yVal ? [yVal floatValue] : 0.0;
 }
 
 // ============================================================================
-// MARK: - Pass-through Views
+// MARK: - Native View Morphing (Hướng 2)
 // ============================================================================
 
-@class DINPassthroughWindow;
+%hook NCNotificationShortLookViewController
 
-@interface DINOverlayManager : NSObject
-@property (nonatomic, strong) DINPassthroughWindow *window;
-@property (nonatomic, strong) UIView *containerView;
-@property (nonatomic, strong) UIView *bgView;
-@property (nonatomic, strong) DINNotificationView *notifView;
-@property (nonatomic, strong) NSTimer *dismissTimer;
-@property (nonatomic, copy) NSString *currentBundleIdentifier;
-@property (nonatomic, assign) BOOL showing;
-@property (nonatomic, assign) NSInteger notificationCount;
-+ (instancetype)sharedInstance;
-- (void)updateLayoutForNewSize:(CGSize)size;
-- (void)showWithTitle:(NSString *)title message:(NSString *)message
-              appName:(NSString *)appName icon:(UIImage *)icon
-     bundleIdentifier:(NSString *)bundleIdentifier;
-- (void)dismiss;
-- (void)openAppAndDismiss;
-- (CGRect)calculateFrameForWidth:(CGFloat)width height:(CGFloat)height size:(CGSize)size;
-+ (void)presentNotificationFromRequest:(id)request withForcedTitle:(NSString *)forcedTitle message:(NSString *)forcedMessage bundleIdentifier:(NSString *)forcedBundleID;
-+ (void)presentNotificationFromRequest:(id)request;
-@end
-
-@interface DINPassthroughView : UIView
-@end
-
-@implementation DINPassthroughView
-- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
-    UIView *hitView = [super hitTest:point withEvent:event];
-    return (hitView == self) ? nil : hitView;
-}
-@end
-
-@interface DINPassthroughViewController : UIViewController
-@end
-
-@implementation DINPassthroughViewController
-- (void)loadView {
-    self.view = [[DINPassthroughView alloc] init];
-    self.view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-    self.view.backgroundColor = [UIColor clearColor];
-}
-- (BOOL)shouldAutorotate {
-    return YES;
-}
-- (UIInterfaceOrientationMask)supportedInterfaceOrientations {
-    // Luôn bám theo hướng xoay thực tế của App/Game đang mở (bỏ qua Khóa xoay)
-    UIInterfaceOrientation orientation = dinGetActiveOrientation();
-    switch (orientation) {
-        case UIInterfaceOrientationLandscapeLeft:
-            return UIInterfaceOrientationMaskLandscapeLeft;
-        case UIInterfaceOrientationLandscapeRight:
-            return UIInterfaceOrientationMaskLandscapeRight;
-        case UIInterfaceOrientationPortraitUpsideDown:
-            return UIInterfaceOrientationMaskPortraitUpsideDown;
-        default:
-            return UIInterfaceOrientationMaskPortrait;
+- (CGSize)preferredContentSizeWithPresentationSize:(CGSize)arg1 containerSize:(CGSize)arg2 {
+    DINPreferences *prefs = [DINPreferences sharedInstance];
+    if (prefs.enabled && prefs.notificationEnabled) {
+        return CGSizeMake(arg1.width, 80); // Đảm bảo BannerKit cấp đủ chiều cao cho ShimaStyle bung nở
     }
-}
-- (void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
-    [super viewWillTransitionToSize:size withTransitionCoordinator:coordinator];
-    [coordinator animateAlongsideTransition:^(id<UIViewControllerTransitionCoordinatorContext> context) {
-        [[DINOverlayManager sharedInstance] updateLayoutForNewSize:size];
-    } completion:nil];
-}
-@end
-
-@interface DINPassthroughWindow : UIWindow
-@end
-
-@implementation DINPassthroughWindow
-- (BOOL)canBecomeKeyWindow { return NO; }
-- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
-    UIView *hitView = [super hitTest:point withEvent:event];
-    if (hitView == self || hitView == self.rootViewController.view) return nil;
-    return hitView;
-}
-- (BOOL)_shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)orientation {
-    return YES;
-}
-- (BOOL)_shouldControlAutorotation {
-    return YES;
-}
-@end
-
-// ============================================================================
-// MARK: - Dynamic Island Overlay Manager
-// ============================================================================
-
-@implementation DINOverlayManager
-
-+ (instancetype)sharedInstance {
-    static DINOverlayManager *instance;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{ instance = [[self alloc] init]; });
-    return instance;
+    return %orig;
 }
 
-- (CGRect)calculateFrameForWidth:(CGFloat)width height:(CGFloat)height size:(CGSize)size {
-    BOOL isLandscape = size.width > size.height;
-    CGFloat yOffset = isLandscape ? sLandscapeYOffset : [DINPreferences sharedInstance].notificationYOffset;
-    CGFloat xOffset = isLandscape ? sLandscapeXOffset : 0.0;
-    
-    CGFloat x = (size.width - width) / 2.0; // Default Center (Chế độ dọc)
-    
-    if (isLandscape) {
-        UIInterfaceOrientation orientation = dinGetActiveOrientation();
-        if (orientation == UIInterfaceOrientationLandscapeRight) {
-            // Nút Home bên Phải -> Tai thỏ nằm ở mép Trái
-            x = 16.0;
-        } else if (orientation == UIInterfaceOrientationLandscapeLeft) {
-            // Nút Home bên Trái -> Tai thỏ nằm ở mép Phải
-            x = size.width - width - 16.0;
-        } else {
-            x = 16.0;
-        }
-    }
-    
-    x += xOffset;
-    
-    return CGRectMake(x, 11.0 + yOffset, width, height);
-}
-
-- (CGRect)pillFrame {
-    CGSize size = self.window ? self.window.bounds.size : UIScreen.mainScreen.bounds.size;
-    return [self calculateFrameForWidth:126.0 height:37.33 size:size];
-}
-
-- (CGRect)expandedFrameForWidth:(CGFloat)width height:(CGFloat)height {
-    CGSize size = self.window ? self.window.bounds.size : UIScreen.mainScreen.bounds.size;
-    CGFloat w = MIN(width, size.width - 16.0);
-    CGFloat h = MAX(44.0, MIN(height, 160.0));
-    return [self calculateFrameForWidth:w height:h size:size];
-}
-
-- (void)updateLayoutForNewSize:(CGSize)size {
-    if (!self.showing) {
-        self.containerView.frame = [self calculateFrameForWidth:126.0 height:37.33 size:size];
-        return;
-    }
-    
-    CGFloat expandedWidth, expandedHeight;
-    NSInteger style = [DINPreferences sharedInstance].notificationStyle;
-    switch (style) {
-        case 1: expandedWidth = 220.0; expandedHeight = 56.0; break;
-        case 2: expandedWidth = 120.0; expandedHeight = 64.0; break;
-        default: {
-            expandedHeight = 72.0; // Khoá cố định chiều cao
-            BOOL isLandscape = size.width > size.height;
-            if (isLandscape) {
-                expandedWidth = 320.0; // Giữ nguyên kích thước 320pt khi xoay ngang
-            } else {
-                CGFloat titleW = [self.notifView.titleLabel intrinsicContentSize].width;
-                CGFloat msgW = [self.notifView.messageLabel intrinsicContentSize].width;
-                CGFloat desiredWidth = MAX(240.0, MAX(titleW, msgW) + 68.0); // Tính toán độ dài chuẩn xác dựa trên số lượng chữ
-                expandedWidth = MIN(desiredWidth, size.width - 16.0); // Không vượt quá 2 mép màn hình
-            }
-            break;
-        }
-    }
-    
-    CGFloat w = MIN(expandedWidth, size.width - 16.0);
-    CGFloat h = MAX(44.0, MIN(expandedHeight, 160.0));
-    CGRect expandedFrame = [self calculateFrameForWidth:w height:h size:size];
-    
-    [UIView animateWithDuration:0.3 delay:0 options:UIViewAnimationOptionCurveEaseInOut animations:^{
-        self.containerView.frame = expandedFrame;
-    } completion:nil];
-}
-
-- (void)ensureWindow {
-    if (self.window && self.window.windowScene &&
-        self.window.windowScene.activationState == UISceneActivationStateUnattached) {
-        self.window.hidden = YES;
-        self.window = nil;
-        self.containerView = nil;
-    }
-
-    if (self.window) return;
-
-    UIWindowScene *scene = nil;
-    for (UIScene *s in UIApplication.sharedApplication.connectedScenes) {
-        if ([s isKindOfClass:[UIWindowScene class]]) {
-            UIWindowScene *ws = (UIWindowScene *)s;
-            if (ws.activationState == UISceneActivationStateForegroundActive) {
-                scene = ws; break;
-            }
-            if (!scene) scene = ws;
-        }
-    }
-
-    if (scene) {
-        self.window = [[DINPassthroughWindow alloc] initWithWindowScene:scene];
-    } else {
-        self.window = [[DINPassthroughWindow alloc] initWithFrame:UIScreen.mainScreen.bounds];
-    }
-
-    self.window.windowLevel = UIWindowLevelStatusBar + 100;
-    self.window.backgroundColor = [UIColor clearColor];
-    self.window.rootViewController = [[DINPassthroughViewController alloc] init];
-
-    // Container view - starts as Dynamic Island pill shape, invisible
-    CGRect pill = [self pillFrame];
-    self.containerView = [[UIView alloc] initWithFrame:pill];
-    self.containerView.backgroundColor = [UIColor clearColor]; // Đổi thành clear để xuyên thấu
-    self.containerView.layer.cornerRadius = pill.size.height / 2.0;
-    self.containerView.layer.cornerCurve = kCACornerCurveContinuous;
-    self.containerView.clipsToBounds = NO; // Tắt clip để bóng đổ (shadow) có thể tràn ra ngoài
-    
-    // Thêm hiệu ứng Shadow bồng bềnh
-    self.containerView.layer.shadowColor = [UIColor blackColor].CGColor;
-    self.containerView.layer.shadowOffset = CGSizeMake(0, 8);
-    self.containerView.layer.shadowRadius = 24.0;
-    self.containerView.layer.shadowOpacity = 0.4;
-    
-    self.containerView.alpha = 0; // Hidden at pill size, avoid corner mismatch with real DI
-    [self.window.rootViewController.view addSubview:self.containerView];
-
-    // Gestures
-    UISwipeGestureRecognizer *swipe = [[UISwipeGestureRecognizer alloc]
-        initWithTarget:self action:@selector(dismiss)];
-    swipe.direction = UISwipeGestureRecognizerDirectionUp;
-    [self.containerView addGestureRecognizer:swipe];
-
-    UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc]
-        initWithTarget:self action:@selector(openAppAndDismiss)];
-    [self.containerView addGestureRecognizer:tap];
-}
-
-- (void)openAppAndDismiss {
-    if (self.currentBundleIdentifier.length > 0) {
-        SEL launchSel = sel_registerName("launchApplicationWithIdentifier:suspended:");
-        id app = [UIApplication sharedApplication];
-        if ([app respondsToSelector:launchSel]) {
-            ((void (*)(id, SEL, id, BOOL))objc_msgSend)(app, launchSel,
-                self.currentBundleIdentifier, NO);
-        }
-    }
-    [self dismiss];
-}
-
-- (void)showWithTitle:(NSString *)title message:(NSString *)message
-              appName:(NSString *)appName icon:(UIImage *)icon
-     bundleIdentifier:(NSString *)bundleIdentifier {
-
-    // --- Feature: Notification Stacking (Gom nhóm thông báo) ---
-    if (self.showing) {
-        if ([self.currentBundleIdentifier isEqualToString:bundleIdentifier]) {
-            self.notificationCount++;
-        } else {
-            self.notificationCount = 1;
-            self.currentBundleIdentifier = bundleIdentifier;
-        }
-
-        // Hiệu ứng Cross-dissolve (mờ dần đổi nội dung) siêu mượt
-        [UIView transitionWithView:self.notifView
-                          duration:0.25
-                           options:UIViewAnimationOptionTransitionCrossDissolve
-                        animations:^{
-            if ([self.notifView respondsToSelector:@selector(updateTitle:message:appName:icon:count:)]) {
-                [self.notifView updateTitle:title message:message appName:appName icon:icon count:self.notificationCount];
-            }
-            
-            // Tự động co giãn chiều dài khung (Chỉ dành cho chế độ Tiêu chuẩn)
-            DINPreferences *prefs = [DINPreferences sharedInstance];
-            if (prefs.notificationStyle == 0) {
-                BOOL isLandscape = self.window.bounds.size.width > self.window.bounds.size.height;
-                CGFloat w;
-                if (isLandscape) {
-                    w = MIN(320.0, self.window.bounds.size.width - 16.0);
-                } else {
-                    CGFloat titleW = [self.notifView.titleLabel intrinsicContentSize].width;
-                    CGFloat msgW = [self.notifView.messageLabel intrinsicContentSize].width;
-                    CGFloat desiredWidth = MAX(240.0, MAX(titleW, msgW) + 68.0);
-                    w = MIN(desiredWidth, self.window.bounds.size.width - 16.0);
-                }
-                CGRect newFrame = [self expandedFrameForWidth:w height:72.0];
-                
-                self.containerView.frame = newFrame;
-            }
-    } completion:^(BOOL finished) {
-        if ([self.notifView respondsToSelector:@selector(startMarquee)]) {
-            [self.notifView startMarquee];
-        }
-    }];
-
-        // Khởi động lại thời gian hiển thị
-        [self.dismissTimer invalidate];
-        double duration = [DINPreferences sharedInstance].dismissDuration;
-        if (duration < 1.0) duration = 1.0;
-        self.dismissTimer = [NSTimer scheduledTimerWithTimeInterval:duration target:self selector:@selector(dismiss) userInfo:nil repeats:NO];
-        return;
-    }
-
-    self.notificationCount = 1;
-    self.currentBundleIdentifier = bundleIdentifier;
-    [self ensureWindow];
-
-    // Ép Window cập nhật hướng xoay ngay lập tức khớp với Game
-    [self.window.rootViewController setNeedsUpdateOfSupportedInterfaceOrientations];
-
-    [self.dismissTimer invalidate];
-    self.dismissTimer = nil;
-
-    [self.notifView removeFromSuperview];
-    [self.bgView removeFromSuperview];
+- (void)viewWillLayoutSubviews {
+    %orig;
 
     DINPreferences *prefs = [DINPreferences sharedInstance];
+    if (!prefs.enabled || !prefs.notificationEnabled) return;
 
-    // Liquid Glass Background Base
-    NSString *bgPath = prefs.customBackgroundEnabled ? prefs.customBackgroundImagePath : nil;
+    id request = [self respondsToSelector:@selector(notificationRequest)] ? [self performSelector:@selector(notificationRequest)] : nil;
+    if (!request) return;
 
-    if (bgPath && dinIsVideoFile(bgPath)) {
-        self.bgView = dinCreateVideoBgView(bgPath, prefs.backgroundOpacity);
-    } else if (bgPath && [[NSFileManager defaultManager] fileExistsAtPath:bgPath]) {
-        self.bgView = [[UIView alloc] init];
-        self.bgView.translatesAutoresizingMaskIntoConstraints = NO;
-        UIImage *bgImage = dinGetCachedCustomImage(bgPath);
-        if (bgImage) {
-            UIImageView *iv = [[UIImageView alloc] initWithImage:bgImage];
-            iv.contentMode = UIViewContentModeScaleAspectFill;
-            iv.translatesAutoresizingMaskIntoConstraints = NO;
-            iv.alpha = prefs.backgroundOpacity;
-            [self.bgView addSubview:iv];
-            [NSLayoutConstraint activateConstraints:@[
-                [iv.topAnchor constraintEqualToAnchor:self.bgView.topAnchor],
-                [iv.leadingAnchor constraintEqualToAnchor:self.bgView.leadingAnchor],
-                [iv.trailingAnchor constraintEqualToAnchor:self.bgView.trailingAnchor],
-                [iv.bottomAnchor constraintEqualToAnchor:self.bgView.bottomAnchor],
-            ]];
+    // Làm tàng hình nền nguyên bản của Apple (Để lại hiệu ứng đổ bóng ảo diệu của riêng ta)
+    self.view.backgroundColor = [UIColor clearColor];
+    self.view.layer.shadowOpacity = 0;
+    self.view.clipsToBounds = NO; // Cho phép khung của ta lấn ra khỏi giới hạn của BannerKit (tràn lên Tai thỏ)
+
+    // Giấu mọi thứ có sẵn bên trong Banner (Tiêu đề gốc, Icon gốc)
+    for (UIView *v in self.view.subviews) {
+        if (v.tag != 34306) {
+            v.hidden = YES;
+            v.alpha = 0;
         }
-    } else {
-        // Tự động sử dụng Blur theo giao diện Sáng/Tối của hệ thống
-        UIBlurEffect *blur = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterial];
-        UIVisualEffectView *blurView = [[UIVisualEffectView alloc] initWithEffect:blur];
-        blurView.translatesAutoresizingMaskIntoConstraints = NO;
-        blurView.alpha = prefs.blurOpacity; // Áp dụng độ mờ riêng cho Blur
-        self.bgView = blurView;
     }
 
-    // Kích hoạt cắt viền bo tròn trực tiếp trên bgView để thay thế cho containerView
-    self.bgView.clipsToBounds = YES;
-    self.bgView.layer.cornerCurve = kCACornerCurveContinuous;
-    self.bgView.layer.cornerRadius = self.containerView.layer.cornerRadius;
+    UIView *containerView = [self.view viewWithTag:34306];
+    DINNotificationView *notifView = [containerView viewWithTag:34307];
 
-    [self.containerView insertSubview:self.bgView atIndex:0];
-    [NSLayoutConstraint activateConstraints:@[
-        [self.bgView.topAnchor constraintEqualToAnchor:self.containerView.topAnchor],
-        [self.bgView.leadingAnchor constraintEqualToAnchor:self.containerView.leadingAnchor],
-        [self.bgView.trailingAnchor constraintEqualToAnchor:self.containerView.trailingAnchor],
-        [self.bgView.bottomAnchor constraintEqualToAnchor:self.containerView.bottomAnchor],
-    ]];
+    // Trích xuất dữ liệu thông báo
+    NCNotificationContent *content = [request respondsToSelector:@selector(content)] ? [request performSelector:@selector(content)] : nil;
+    NSString *title = [content respondsToSelector:@selector(title)] ? [content performSelector:@selector(title)] : nil;
+    NSString *subtitle = [content respondsToSelector:@selector(subtitle)] ? [content performSelector:@selector(subtitle)] : nil;
+    NSString *message = [content respondsToSelector:@selector(message)] ? [content performSelector:@selector(message)] : nil;
+    NSString *bundleID = [request respondsToSelector:@selector(sectionIdentifier)] ? [request performSelector:@selector(sectionIdentifier)] : nil;
 
-    // Get notification style
-    NSInteger style = prefs.notificationStyle;
-    NSInteger textColorStyle = prefs.textColorStyle;
+    NSString *finalTitle = title;
+    NSString *finalMessage = message;
+    if (!finalMessage && subtitle) {
+        finalMessage = subtitle;
+    } else if (title && subtitle) {
+        finalTitle = [NSString stringWithFormat:@"%@ - %@", title, subtitle];
+    }
 
-    self.notifView = [[DINNotificationView alloc] initWithTitle:title message:message
-                                                        appName:appName icon:icon
-                                                          style:(DINNotificationStyle)style
-                                                 textColorStyle:textColorStyle];
-    self.notifView.translatesAutoresizingMaskIntoConstraints = NO;
-    self.notifView.alpha = 0;
-    self.notifView.transform = CGAffineTransformMakeScale(0.5, 0.5);
-    [self.containerView addSubview:self.notifView];
+    if (!containerView) {
+        containerView = [[UIView alloc] init];
+        containerView.tag = 34306;
+        containerView.clipsToBounds = YES;
+        containerView.layer.cornerCurve = kCACornerCurveContinuous;
 
-    // Layout dimensions per style
-    CGFloat expandedWidth, expandedHeight;
-    switch (style) {
-        case 1: // Compact
-            expandedWidth = 220.0;
-            expandedHeight = 56.0;
-            break;
-        case 2: // Minimal
-            expandedWidth = 120.0;
-            expandedHeight = 64.0;
-            break;
-        default: // Standard
-        {
-            expandedHeight = 72.0;
-            BOOL isLandscape = self.window.bounds.size.width > self.window.bounds.size.height;
-            if (isLandscape) {
-                expandedWidth = 320.0;
+        // Vẽ nền (Background)
+        if (prefs.customBackgroundEnabled && prefs.customBackgroundImagePath) {
+            NSString *bgPath = prefs.customBackgroundImagePath;
+            if (dinIsVideoFile(bgPath)) {
+                UIView *vidBg = dinCreateVideoBgView(bgPath, prefs.backgroundOpacity);
+                vidBg.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+                [containerView addSubview:vidBg];
             } else {
-                CGFloat titleW = [self.notifView.titleLabel intrinsicContentSize].width;
-                CGFloat msgW = [self.notifView.messageLabel intrinsicContentSize].width;
-                CGFloat desiredWidth = MAX(240.0, MAX(titleW, msgW) + 68.0);
-                expandedWidth = MIN(desiredWidth, self.window.bounds.size.width - 16.0);
+                UIImage *bgImage = dinGetCachedCustomImage(bgPath);
+                if (bgImage) {
+                    UIImageView *iv = [[UIImageView alloc] initWithImage:bgImage];
+                    iv.contentMode = UIViewContentModeScaleAspectFill;
+                    iv.alpha = prefs.backgroundOpacity;
+                    iv.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+                    [containerView addSubview:iv];
+                } else {
+                    containerView.backgroundColor = [UIColor blackColor];
+                }
             }
-            break;
-        }
-    }
-
-    [NSLayoutConstraint activateConstraints:@[
-        [self.notifView.topAnchor constraintEqualToAnchor:self.containerView.topAnchor],
-        [self.notifView.bottomAnchor constraintEqualToAnchor:self.containerView.bottomAnchor],
-        [self.notifView.leadingAnchor constraintEqualToAnchor:self.containerView.leadingAnchor],
-        [self.notifView.trailingAnchor constraintEqualToAnchor:self.containerView.trailingAnchor],
-    ]];
-
-    // Start from pill shape
-    if (!self.showing) {
-        CGRect pill = [self pillFrame];
-        self.containerView.frame = pill;
-        self.containerView.layer.cornerRadius = pill.size.height / 2.0;
-        self.bgView.layer.cornerRadius = pill.size.height / 2.0;
-        self.containerView.alpha = 0;
-    }
-
-    self.window.hidden = NO;
-    self.showing = YES;
-
-    CGRect expandedFrame = [self expandedFrameForWidth:expandedWidth height:expandedHeight];
-    CGFloat expandedRadius = expandedFrame.size.height / 2.0; // Capsule shape like AirDrop
-
-    // Đã xóa hiệu ứng Haptic rung ở đây vì %orig sẽ tự động kích hoạt rung/chuông mặc định của iOS
-
-    double animDuration = [DINPreferences sharedInstance].animationDuration;
-    // Spring expand animation - Hiệu ứng "giọt nước rơi" mượt mà, đàn hồi
-    [UIView animateWithDuration:animDuration delay:0
-         usingSpringWithDamping:0.65 initialSpringVelocity:1.2
-                        options:UIViewAnimationOptionAllowUserInteraction
-                     animations:^{
-        self.containerView.alpha = 1.0;
-        self.containerView.frame = expandedFrame;
-        self.containerView.layer.cornerRadius = expandedRadius;
-        self.bgView.layer.cornerRadius = expandedRadius;
-        self.notifView.alpha = 1.0;
-        self.notifView.transform = CGAffineTransformIdentity;
-    } completion:^(BOOL finished) {
-        // Sau khi bung mở xong, kiểm tra và chạy hiệu ứng chữ nếu dài
-        if ([self.notifView respondsToSelector:@selector(startMarquee)]) {
-            [self.notifView startMarquee];
-        }
-    }];
-
-    // Auto-dismiss after configured duration
-    double duration = [DINPreferences sharedInstance].dismissDuration;
-    if (duration < 1.0) duration = 1.0;
-    self.dismissTimer = [NSTimer scheduledTimerWithTimeInterval:duration
-        target:self selector:@selector(dismiss) userInfo:nil repeats:NO];
-}
-
-- (void)dismiss {
-    if (!self.showing) return;
-
-    [self.dismissTimer invalidate];
-    self.dismissTimer = nil;
-
-    CGRect pill = [self pillFrame];
-    CGFloat pillRadius = pill.size.height / 2.0;
-
-    double animDuration = [DINPreferences sharedInstance].animationDuration;
-    
-    // Dừng ngay hiệu ứng cuộn chữ (nếu có) để tránh giật hình
-    [self.notifView.messageLabel.layer removeAllAnimations];
-
-    // 1. Làm mờ phần văn bản/nội dung cực nhanh (chỉ tốn 1/3 thời gian tổng)
-    [UIView animateWithDuration:animDuration * 0.3 delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^{
-        self.notifView.alpha = 0;
-        self.notifView.transform = CGAffineTransformMakeScale(0.8, 0.8);
-    } completion:nil];
-
-    // 2. Thu nhỏ khung viền và hoà quyện mờ dần vào DI nguyên bản
-    [UIView animateWithDuration:animDuration delay:0
-         usingSpringWithDamping:0.75 initialSpringVelocity:0.8
-                        options:UIViewAnimationOptionCurveEaseInOut | UIViewAnimationOptionAllowUserInteraction
-                 animations:^{
-        self.containerView.frame = pill;
-        self.containerView.layer.cornerRadius = pillRadius;
-        self.bgView.layer.cornerRadius = pillRadius;
-        self.containerView.alpha = 0; // Làm mờ bóng đổ và viền ĐỒNG THỜI khi thu nhỏ
-    } completion:^(BOOL finished) {
-        self.window.hidden = YES;
-        self.showing = NO;
-        [self.notifView removeFromSuperview];
-        [self.bgView removeFromSuperview];
-        self.notifView = nil;
-        self.bgView = nil;
-    }];
-}
-
-    // ============================================================================
-    // MARK: - Core Notification Presentation Logic
-    // ============================================================================
-
-+ (void)presentNotificationFromRequest:(id)request withForcedTitle:(NSString *)forcedTitle message:(NSString *)forcedMessage bundleIdentifier:(NSString *)forcedBundleID {
-    [self _presentWithRequest:request forcedTitle:forcedTitle forcedMessage:forcedMessage forcedBundleID:forcedBundleID];
-}
-
-+ (void)presentNotificationFromRequest:(id)request {
-    [self _presentWithRequest:request forcedTitle:nil forcedMessage:nil forcedBundleID:nil];
-}
-
-+ (void)_presentWithRequest:(id)request forcedTitle:(NSString *)forcedTitle forcedMessage:(NSString *)forcedMessage forcedBundleID:(NSString *)forcedBundleID {
-    NCNotificationContent *content = [request respondsToSelector:@selector(content)] ? [request content] : nil;
-    NSString *bundleIdentifier = forcedBundleID ?: ([request respondsToSelector:@selector(sectionIdentifier)] ? [request sectionIdentifier] : nil);
-
-    dispatch_block_t showBlock = ^{
-        
-        NSString *title = [content respondsToSelector:@selector(title)] ? [content title] : nil;
-        NSString *message = [content respondsToSelector:@selector(message)] ? [content message] : nil;
-        
-        NSString *finalTitle = title;
-        NSString *finalMessage = message;
-
-        if (forcedTitle || forcedMessage) {
-            finalTitle = forcedTitle;
-            finalMessage = forcedMessage;
         } else {
-            NSString *subtitle = [content respondsToSelector:@selector(subtitle)] ? [content subtitle] : nil;
-            if (!finalMessage && subtitle) {
-                finalMessage = subtitle; // Nếu không có message, lấy subtitle đắp vào
-            } else if (title && subtitle) {
-                finalTitle = [NSString stringWithFormat:@"%@ - %@", title, subtitle]; // Nối title và subtitle
-            }
+            containerView.backgroundColor = [UIColor blackColor];
         }
-        
-        if (!finalTitle && !finalMessage) return;
 
+        // Lấy tên App
         NSString *appName = nil;
         static NSCache *sAppNameCache = nil;
         static dispatch_once_t onceTokenName;
         dispatch_once(&onceTokenName, ^{ sAppNameCache = [[NSCache alloc] init]; });
-        
-        if (bundleIdentifier) {
-            appName = [sAppNameCache objectForKey:bundleIdentifier];
+        if (bundleID) {
+            appName = [sAppNameCache objectForKey:bundleID];
             if (!appName) {
-                static Class s_SBAppControllerClass = nil;
-                static dispatch_once_t onceTokenApp;
-                dispatch_once(&onceTokenApp, ^{ s_SBAppControllerClass = objc_lookUpClass("SBApplicationController"); });
-                
-                SBApplicationController *appController = [s_SBAppControllerClass sharedInstance];
+                Class s_SBAppControllerClass = objc_lookUpClass("SBApplicationController");
+                id appController = ((id (*)(Class, SEL))objc_msgSend)(s_SBAppControllerClass, sel_registerName("sharedInstance"));
                 if (appController && [appController respondsToSelector:@selector(applicationWithBundleIdentifier:)]) {
-                    SBApplication *app = [appController applicationWithBundleIdentifier:bundleIdentifier];
-                    if (app && [app respondsToSelector:@selector(displayName)]) appName = [app displayName];
+                    id app = [appController performSelector:@selector(applicationWithBundleIdentifier:) withObject:bundleID];
+                    if (app && [app respondsToSelector:@selector(displayName)]) appName = [app performSelector:@selector(displayName)];
                 }
-                if (appName) [sAppNameCache setObject:appName forKey:bundleIdentifier];
+                if (appName) [sAppNameCache setObject:appName forKey:bundleID];
             }
         }
-        
+
+        // Lấy Icon
         UIImage *icon = nil;
         if ([content respondsToSelector:@selector(icons)] && [[content performSelector:@selector(icons)] isKindOfClass:[NSArray class]]) {
             NSArray *icons = [content performSelector:@selector(icons)];
@@ -956,136 +391,56 @@ static void dinReloadLandscapeOffsets() {
         } else if ([content respondsToSelector:@selector(icon)]) {
             icon = [content performSelector:@selector(icon)];
         }
-        if (!icon) icon = dinAppIcon(bundleIdentifier);
+        if (!icon) icon = dinAppIcon(bundleID);
         if (!icon) icon = dinPlaceholderIcon(appName);
-        
-        [[DINOverlayManager sharedInstance] showWithTitle:finalTitle message:finalMessage
-                                                  appName:appName icon:icon
-                                         bundleIdentifier:bundleIdentifier];
-    };
 
-    if ([NSThread isMainThread]) {
-        showBlock();
-    } else {
-        dispatch_async(dispatch_get_main_queue(), showBlock);
+        // Gắn ShimaStyle UI vào
+        notifView = [[DINNotificationView alloc] initWithTitle:finalTitle message:finalMessage appName:appName icon:icon style:(DINNotificationStyle)prefs.notificationStyle textColorStyle:prefs.textColorStyle];
+        notifView.tag = 34307;
+        notifView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        [containerView addSubview:notifView];
+
+        [self.view addSubview:containerView];
+
+        // Khởi động chữ chạy (Marquee)
+        if ([notifView respondsToSelector:@selector(startMarquee)]) {
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                [notifView startMarquee];
+            });
+        }
+    } else if ([notifView respondsToSelector:@selector(updateTitle:message:appName:icon:count:)]) {
+        // Nếu BannerKit nạp lại View để hiển thị nội dung mới, tự động cập nhật text
+        [notifView updateTitle:finalTitle message:finalMessage appName:nil icon:nil count:1];
     }
-}
 
-@end
+    // TÍNH TOÁN KHUNG HIỂN THỊ (DYNAMIC ISLAND MORPHING)
+    CGFloat w = 320.0;
+    CGFloat h = 72.0;
+    if (prefs.notificationStyle == 1) { w = 220.0; h = 56.0; }
+    else if (prefs.notificationStyle == 2) { w = 120.0; h = 64.0; }
+    else {
+        if (notifView) {
+            CGFloat titleW = [notifView.titleLabel intrinsicContentSize].width;
+            CGFloat msgW = [notifView.messageLabel intrinsicContentSize].width;
+            CGFloat desiredWidth = MAX(240.0, MAX(titleW, msgW) + 68.0);
+            w = MIN(desiredWidth, UIScreen.mainScreen.bounds.size.width - 16.0);
+        }
+    }
 
-// ============================================================================
-// MARK: - Hooks
-// ============================================================================
+    BOOL isLandscape = UIScreen.mainScreen.bounds.size.width > UIScreen.mainScreen.bounds.size.height;
+    CGFloat yOffset = isLandscape ? sLandscapeYOffset : prefs.notificationYOffset;
+    CGFloat xOffset = isLandscape ? sLandscapeXOffset : 0.0;
 
-%hook NCNotificationDispatcher
-
-- (void)postNotificationWithRequest:(id)request {
-    %orig; 
-
-    if (!dinShouldShowCustomBanner(request)) return;
-    if (dinShouldThrottle()) return;
+    // Căn giữa viên thuốc so với khung ẩn của BannerKit
+    CGFloat centerX = (self.view.bounds.size.width - w) / 2.0 + xOffset;
     
-    sLastNotificationTime = [NSDate date];
-    [DINOverlayManager presentNotificationFromRequest:request];
+    // Lực đẩy Y âm (-15) giúp viên thuốc nhảy lên che khuất tai thỏ (Do BannerKit mặc định đặt nó hơi thấp)
+    CGFloat defaultUpwardShift = isLandscape ? 0.0 : -15.0; 
+    
+    containerView.frame = CGRectMake(centerX, defaultUpwardShift + yOffset, w, h);
+    containerView.layer.cornerRadius = h / 2.0;
 }
 
-- (void)modifyNotificationWithRequest:(id)request {
-    %orig;
-    if (!dinShouldShowCustomBanner(request)) return;
-    [DINOverlayManager presentNotificationFromRequest:request];
-}
-
-%end
-
-// --- Chặn Banner mặc định của iOS ---
-
-%hook SBNCAlertingController
-- (BOOL)alertDispatcher:(id)arg1 shouldPresentAlertForNotificationRequest:(id)arg2 {
-    if (dinShouldShowCustomBanner(arg2)) return NO;
-    return %orig;
-}
-- (void)alertDispatcher:(id)arg1 postAlertForNotificationRequest:(id)arg2 {
-    if (dinShouldShowCustomBanner(arg2)) return;
-    %orig;
-}
-%end
-
-%hook NCNotificationBannerDestination
-- (BOOL)canReceiveNotificationRequest:(id)arg1 {
-    if (dinShouldShowCustomBanner(arg1)) return NO;
-    return %orig;
-}
-%end
-
-%hook SBNotificationBannerDestination
-- (BOOL)canReceiveNotificationRequest:(id)arg1 {
-    if (dinShouldShowCustomBanner(arg1)) return NO;
-    return %orig;
-}
-%end
-
-// --- Chặn thông báo nguyên bản của Dynamic Island (System Aperture) ---
-
-%hook SBNCSystemApertureNotificationDestination
-- (BOOL)canReceiveNotificationRequest:(id)arg1 {
-    if (dinShouldShowCustomBanner(arg1)) return NO;
-    return %orig;
-}
-%end
-
-%hook SBSystemApertureNotificationDestination
-- (BOOL)canReceiveNotificationRequest:(id)arg1 {
-    if (dinShouldShowCustomBanner(arg1)) return NO;
-    return %orig;
-}
-%end
-
-%hook NCNotificationSystemApertureDestination
-- (BOOL)canReceiveNotificationRequest:(id)arg1 {
-    if (dinShouldShowCustomBanner(arg1)) return NO;
-    return %orig;
-}
-%end
-
-%hook PKPushRegistry
-- (void)pushRegistry:(id)registry didReceiveIncomingPushWithPayload:(PKPushPayload *)payload forType:(NSString *)type withCompletionHandler:(void (^)(void))completion {
-    %orig;
-
-    @try {
-        // Chỉ xử lý PushKit của Telegram
-        id delegate = [(id)self delegate];
-        NSString *bundleIdentifier = nil;
-        if ([delegate respondsToSelector:@selector(bundleIdentifier)]) {
-            bundleIdentifier = [delegate performSelector:@selector(bundleIdentifier)];
-        }
-        if (![bundleIdentifier isEqualToString:@"ph.telegra.Telegraph"]) {
-            return;
-        }
-
-        if (!dinShouldShowCustomBanner(nil)) return; // Dùng bộ lọc chung (đã bao gồm check Tweak bật/tắt, Lockscreen, Active App)
-        
-        NSDictionary *dict = [payload dictionaryPayload];
-        if (!dict || ![dict isKindOfClass:[NSDictionary class]]) return;
-        
-        NSDictionary *aps = dict[@"aps"];
-        if (!aps || ![aps isKindOfClass:[NSDictionary class]]) return;
-
-        id alert = aps[@"alert"];
-        NSString *title = nil;
-        NSString *message = nil;
-
-        if ([alert isKindOfClass:[NSString class]]) {
-            message = alert;
-        } else if ([alert isKindOfClass:[NSDictionary class]]) {
-            title = alert[@"title"];
-            message = alert[@"body"];
-        }
-
-        if (title || message) {
-            [DINOverlayManager presentNotificationFromRequest:nil withForcedTitle:title message:message bundleIdentifier:bundleIdentifier];
-        }
-    } @catch (NSException *e) {}
-}
 %end
 
 // ============================================================================
@@ -1194,22 +549,16 @@ static void *kDINBorderLayerKey = &kDINBorderLayerKey;
     dinReloadLandscapeOffsets();
 
     int token = 0;
-    notify_register_dispatch("com.34306.shimastyle/prefsChanged",
+    notify_register_dispatch("com.romlayvn.shimareborn/prefsChanged",
         &token, dispatch_get_main_queue(), ^(int t) {
             [[DINPreferences sharedInstance] reloadPreferences];
             dinReloadLandscapeOffsets();
         });
 
     int testToken = 0;
-    notify_register_dispatch("com.34306.shimastyle/testNotification",
+    notify_register_dispatch("com.romlayvn.shimareborn/testNotification",
         &testToken, dispatch_get_main_queue(), ^(int t) {
-            UIImage *icon = dinAppIcon(@"com.apple.Preferences");
-            if (!icon) icon = dinPlaceholderIcon(@"Settings");
-            [[DINOverlayManager sharedInstance] showWithTitle:@"ShimaStyle"
-                                                     message:@"Chào mừng bạn đến với ShimaStyle! Tinh chỉnh này sẽ mang trải nghiệm thông báo Dynamic Island tuyệt đẹp và mượt mà nhất lên thiết bị của bạn. Chúc bạn sử dụng vui vẻ!"
-                                                     appName:@"Cài đặt"
-                                                        icon:icon
-                                            bundleIdentifier:@"com.apple.Preferences"];
+            // Nút Thử nghiệm bị Vô hiệu hóa ở chế độ Native Morph. Hãy gửi một tin nhắn thật qua Telegram/Zalo để kiểm tra!
         });
 
     %init;
