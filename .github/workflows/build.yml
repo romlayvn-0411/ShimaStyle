@@ -2,11 +2,11 @@ name: Build ShimaReborn Tweak
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, 'experiment/**' ]
     tags:
       - 'v*' # Tự động chạy khi bạn push một tag bắt đầu bằng "v" (ví dụ: v1.0.0)
   pull_request:
-    branches: [ main, master ]
+    branches: [ main, master, 'experiment/**' ]
   workflow_dispatch: # Cho phép kích hoạt build thủ công từ giao diện GitHub
 
 env:
@@ -40,11 +40,21 @@ jobs:
         run: |
           if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
             VERSION=${GITHUB_REF#refs/tags/v}
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
           else
             FILE="control"
             [ ! -f "control" ] && FILE="control.yaml"
             BASE_VERSION=$(awk '/^Version:/ {print $2}' $FILE | sed 's/-.*//')
-            VERSION="${BASE_VERSION}"
+            
+            BRANCH_NAME=${GITHUB_REF#refs/heads/}
+            if [[ "$BRANCH_NAME" == "main" || "$BRANCH_NAME" == "master" ]]; then
+              VERSION="${BASE_VERSION}"
+              echo "is_prerelease=false" >> $GITHUB_OUTPUT
+            else
+              SAFE_BRANCH=$(echo "$BRANCH_NAME" | tr '/' '-')
+              VERSION="${BASE_VERSION}-${SAFE_BRANCH}"
+              echo "is_prerelease=true" >> $GITHUB_OUTPUT
+            fi
           fi
           echo "Updating version to $VERSION"
           echo "pkg_version=$VERSION" >> $GITHUB_OUTPUT
@@ -81,11 +91,13 @@ jobs:
           body: ${{ steps.release_notes.outputs.body }}
           files: packages/*.deb
           generate_release_notes: true
-          make_latest: true
+          prerelease: ${{ steps.version.outputs.is_prerelease == 'true' }}
+          make_latest: ${{ steps.version.outputs.is_prerelease == 'false' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Delete Older Releases (Chỉ giữ 1 bản mới nhất)
+      - name: Delete Older Releases (Chỉ giữ 1 bản mới nhất cho nhánh chính)
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         uses: dev-drprasad/delete-older-releases@v0.3.3
         with:
           keep_latest: 1
