@@ -14,6 +14,8 @@
 @property (nonatomic, assign) double animationDuration;
 @property (nonatomic, assign) NSInteger notificationStyle;
 @property (nonatomic, assign) NSInteger textColorStyle;
+@property (nonatomic, assign) BOOL auraGlowEnabled;
+@property (nonatomic, assign) BOOL hapticFeedbackEnabled;
 
 + (instancetype)sharedInstance;
 - (void)reloadPreferences;

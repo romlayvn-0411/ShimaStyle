@@ -55,6 +55,38 @@
 // MARK: - App Icon Helper
 // ============================================================================
 
+// Hàm trích xuất màu chủ đạo từ hình ảnh cực kỳ thông minh
+static UIColor *dinAverageColorFromImage(UIImage *image) {
+    if (!image) return [UIColor clearColor];
+    
+    // Tối ưu 1: Cache toàn cầu cho màu sắc Icon. Nếu 1 icon đã được tính toán, lấy ngay từ RAM (0ms)
+    static NSCache *sAuraColorCache = nil;
+    static dispatch_once_t onceTokenAura;
+    dispatch_once(&onceTokenAura, ^{ sAuraColorCache = [[NSCache alloc] init]; });
+    
+    UIColor *cachedColor = [sAuraColorCache objectForKey:image];
+    if (cachedColor) return cachedColor;
+    
+    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+    unsigned char rgba[4];
+    CGContextRef context = CGBitmapContextCreate(rgba, 1, 1, 8, 4, colorSpace, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    if (context) {
+        CGContextSetInterpolationQuality(context, kCGInterpolationLow); // Tối ưu: Dùng chất lượng thấp nhất để nội suy màu cho siêu nhanh
+        CGContextDrawImage(context, CGRectMake(0, 0, 1, 1), image.CGImage);
+        CGContextRelease(context);
+    }
+    CGColorSpaceRelease(colorSpace);
+    
+    UIColor *color = [UIColor clearColor];
+    if(rgba[3] > 0) {
+        CGFloat alpha = ((CGFloat)rgba[3])/255.0;
+        CGFloat multiplier = alpha/255.0;
+        color = [UIColor colorWithRed:((CGFloat)rgba[0])*multiplier green:((CGFloat)rgba[1])*multiplier blue:((CGFloat)rgba[2])*multiplier alpha:alpha];
+    }
+    [sAuraColorCache setObject:color forKey:image];
+    return color;
+}
+
 static BOOL dinIsDeviceLockedOrInCoverSheet(void) {
     __block BOOL isLocked = NO;
     dispatch_block_t getLockBlock = ^{
@@ -345,10 +377,14 @@ static void dinReloadLandscapeOffsets() {
     if (inScrollView) return;
     
     // Chuẩn hóa SDK 18.5: Ép toàn bộ các lớp view cha không được cắt viền (để ShimaReborn có thể vẽ đè lên khu vực Tai thỏ an toàn trên iOS 16+)
-    UIView *sv = self.view;
-    while (sv) {
-        sv.clipsToBounds = NO;
-        sv = sv.superview;
+    // Tối ưu 2: Chỉ leo cây giao diện 1 lần duy nhất khi vừa khởi tạo
+    if (![objc_getAssociatedObject(self, "din_clipsConfigured") boolValue]) {
+        UIView *sv = self.view;
+        while (sv) {
+            sv.clipsToBounds = NO;
+            sv = sv.superview;
+        }
+        objc_setAssociatedObject(self, "din_clipsConfigured", @(YES), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     }
 
     // Làm tàng hình toàn bộ Khung nền (PlatterView) và Bóng đổ nguyên bản của Apple
@@ -358,8 +394,9 @@ static void dinReloadLandscapeOffsets() {
         platterView.backgroundColor = [UIColor clearColor];
         platterView.layer.shadowOpacity = 0;
         for (UIView *sub in platterView.subviews) {
-            if ([NSStringFromClass([sub class]) containsString:@"Background"] || [NSStringFromClass([sub class]) containsString:@"Shadow"]) {
-                sub.alpha = 0.01;
+            // Tối ưu 3: Loại bỏ hoàn toàn tác vụ xử lý Chuỗi (String) đắt đỏ, chỉ cần so sánh con trỏ
+            if (sub != self.view) {
+                sub.alpha = 0.01; 
             }
         }
     }
@@ -477,6 +514,12 @@ static void dinReloadLandscapeOffsets() {
         if (!icon) icon = dinAppIcon(bundleID);
         if (!icon) icon = dinPlaceholderIcon(appName);
 
+        // Tối ưu 4: Tính toán màu Aura Glow MỘT LẦN DUY NHẤT và lưu vào bộ nhớ cục bộ
+        if (prefs.auraGlowEnabled && icon) {
+            UIColor *auraColor = dinAverageColorFromImage(icon);
+            objc_setAssociatedObject(self, "din_auraColor", auraColor, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        }
+
         // Gắn ShimaStyle UI vào
         notifView = [[DINNotificationView alloc] initWithTitle:finalTitle message:finalMessage appName:appName icon:icon style:(DINNotificationStyle)prefs.notificationStyle textColorStyle:prefs.textColorStyle];
         notifView.tag = 34307;
@@ -485,21 +528,6 @@ static void dinReloadLandscapeOffsets() {
         [containerView addSubview:notifView];
 
         [self.view addSubview:containerView];
-        
-        // Thêm hiệu ứng Bung mở (Spring Bouncy) mượt mà cho lần hiển thị đầu tiên
-        containerView.transform = CGAffineTransformMakeScale(0.6, 0.6);
-        containerView.alpha = 0.0;
-        [UIView animateWithDuration:prefs.animationDuration delay:0 usingSpringWithDamping:0.65 initialSpringVelocity:1.2 options:UIViewAnimationOptionAllowUserInteraction | UIViewAnimationOptionCurveEaseOut animations:^{
-            containerView.transform = CGAffineTransformIdentity;
-            containerView.alpha = 1.0;
-        } completion:nil];
-
-        // Khởi động chữ chạy (Marquee)
-        if ([notifView respondsToSelector:@selector(startMarquee)]) {
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-                [notifView startMarquee];
-            });
-        }
     } else if ([notifView respondsToSelector:@selector(updateTitle:message:appName:icon:count:)]) {
         // Nếu BannerKit nạp lại View để hiển thị nội dung mới, tự động cập nhật text
         [notifView updateTitle:finalTitle message:finalMessage appName:nil icon:nil count:1];
@@ -531,6 +559,44 @@ static void dinReloadLandscapeOffsets() {
     
     containerView.frame = CGRectMake(centerX, defaultUpwardShift + yOffset, w, h);
     containerView.layer.cornerRadius = h / 2.0;
+
+    // --- TÍNH NĂNG ĐỈNH CAO (ULTIMATE FEATURES) ---
+
+    // 1. Viền sáng Aura Glow tự đổi màu theo App Icon
+    if (prefs.auraGlowEnabled) {
+        UIColor *cachedAuraColor = objc_getAssociatedObject(self, "din_auraColor");
+        if (cachedAuraColor) {
+            self.view.layer.shadowColor = cachedAuraColor.CGColor;
+        }
+        self.view.layer.shadowOffset = CGSizeMake(0, 0);
+        self.view.layer.shadowRadius = 18.0;
+        self.view.layer.shadowPath = [UIBezierPath bezierPathWithRoundedRect:containerView.frame cornerRadius:containerView.layer.cornerRadius].CGPath;
+    } else {
+        self.view.layer.shadowOpacity = 0;
+    }
+
+    // 2. Rung Haptic & Animation bung nở (Chỉ chạy 1 lần duy nhất khi vừa hiện ra)
+    if (![objc_getAssociatedObject(self, "din_hasPresented") boolValue]) {
+        if (prefs.hapticFeedbackEnabled) {
+            UIImpactFeedbackGenerator *feedback = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleRigid];
+            [feedback prepare];
+            [feedback impactOccurred];
+        }
+        
+        containerView.transform = CGAffineTransformMakeScale(0.6, 0.6);
+        containerView.alpha = 0.0;
+        if (prefs.auraGlowEnabled) self.view.layer.shadowOpacity = 0.0; // Tạm ẩn Glow
+        
+        [UIView animateWithDuration:prefs.animationDuration delay:0 usingSpringWithDamping:0.65 initialSpringVelocity:1.2 options:UIViewAnimationOptionAllowUserInteraction | UIViewAnimationOptionCurveEaseOut animations:^{
+            containerView.transform = CGAffineTransformIdentity;
+            containerView.alpha = 1.0;
+            if (prefs.auraGlowEnabled) self.view.layer.shadowOpacity = 0.9; // Bung Glow lên cùng lúc
+        } completion:^(BOOL finished) {
+            if ([notifView respondsToSelector:@selector(startMarquee)]) [notifView startMarquee];
+        }];
+        
+        objc_setAssociatedObject(self, "din_hasPresented", @(YES), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    }
 }
 
 %end

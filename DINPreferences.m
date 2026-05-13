@@ -42,6 +42,8 @@ static NSString *const kPrefsDomain = @"com.romlayvn.shimareborn";
     _animationDuration = prefs[@"animationDuration"] ? [prefs[@"animationDuration"] doubleValue] : 0.45;
     _notificationStyle = prefs[@"notificationStyle"] ? [prefs[@"notificationStyle"] integerValue] : 0;
     _textColorStyle = prefs[@"textColorStyle"] ? [prefs[@"textColorStyle"] integerValue] : 0;
+    _auraGlowEnabled = prefs[@"auraGlowEnabled"] ? [prefs[@"auraGlowEnabled"] boolValue] : YES;
+    _hapticFeedbackEnabled = prefs[@"hapticFeedbackEnabled"] ? [prefs[@"hapticFeedbackEnabled"] boolValue] : YES;
 }
 
 @end

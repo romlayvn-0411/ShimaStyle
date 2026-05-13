@@ -51,8 +51,7 @@ jobs:
               VERSION="${BASE_VERSION}"
               echo "is_prerelease=false" >> $GITHUB_OUTPUT
             else
-              SAFE_BRANCH=$(echo "$BRANCH_NAME" | tr '/' '-')
-              VERSION="${BASE_VERSION}-${SAFE_BRANCH}"
+              VERSION="${BASE_VERSION}-beta"
               echo "is_prerelease=true" >> $GITHUB_OUTPUT
             fi
           fi
