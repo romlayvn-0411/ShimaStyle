@@ -19,4 +19,8 @@ typedef NS_ENUM(NSInteger, DINNotificationStyle) {
                         style:(DINNotificationStyle)style
                textColorStyle:(NSInteger)textColorStyle;
 - (void)startMarquee;
+- (void)addPulsingAnimationWithDuration:(NSTimeInterval)duration;
+- (void)stopPulsingAnimation;
+- (void)applyVibrantBlurEffect;
+- (void)updateAppearanceForTraitCollection:(UITraitCollection *)traitCollection;
 @end
