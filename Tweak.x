@@ -544,18 +544,21 @@ static __weak id sharedDispatcher = nil; // Chuẩn hóa SDK 18.5: Dùng __weak 
 %hook NCNotificationDispatcher
 
 - (id)init {
-    sharedDispatcher = %orig;
-    return sharedDispatcher;
+    id result = %orig;
+    sharedDispatcher = result;
+    return result;
 }
 
 - (id)initWithAlertingController:(id)arg1 {
-    sharedDispatcher = %orig;
-    return sharedDispatcher;
+    id result = %orig;
+    sharedDispatcher = result;
+    return result;
 }
 
 - (id)initWithNotificationDestinations:(id)arg1 alertingController:(id)arg2 {
-    sharedDispatcher = %orig;
-    return sharedDispatcher;
+    id result = %orig;
+    sharedDispatcher = result;
+    return result;
 }
 
 - (void)postNotificationWithRequest:(id)arg1 {
