@@ -1,6 +1,6 @@
 Package: com.romlayvn.shimareborn
 Name: ShimaReborn
-Version: 1.0.0
+Version: 1.0.1
 Architecture: iphoneos-arm
 Description: Force all notifications to Dynamic Island with custom background support. Supports iOS 16-26.
 Maintainer: romlayvn

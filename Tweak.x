@@ -47,9 +47,34 @@
 - (id)notificationRequest;
 @end
 
+@interface NCNotificationDispatcher : NSObject
+- (void)postNotificationWithRequest:(id)arg1;
+@end
+
 // ============================================================================
 // MARK: - App Icon Helper
 // ============================================================================
+
+static BOOL dinIsDeviceLockedOrInCoverSheet(void) {
+    __block BOOL isLocked = NO;
+    dispatch_block_t getLockBlock = ^{
+        static Class s_SBLockScreenManagerClass = nil;
+        static dispatch_once_t onceTokenLock;
+        dispatch_once(&onceTokenLock, ^{ s_SBLockScreenManagerClass = objc_lookUpClass("SBLockScreenManager"); });
+        if (s_SBLockScreenManagerClass) {
+            id lockScreenManager = ((id (*)(Class, SEL))objc_msgSend)(s_SBLockScreenManagerClass, sel_registerName("sharedInstance"));
+            if (lockScreenManager && [lockScreenManager respondsToSelector:@selector(isLockScreenVisible)]) {
+                isLocked = ((BOOL (*)(id, SEL))objc_msgSend)(lockScreenManager, @selector(isLockScreenVisible));
+            }
+        }
+    };
+    if ([NSThread isMainThread]) {
+        getLockBlock();
+    } else {
+        dispatch_sync(dispatch_get_main_queue(), getLockBlock);
+    }
+    return isLocked;
+}
 
 static UIImage *dinAppIcon(NSString *bundleIdentifier) {
     if (!bundleIdentifier) return nil;
@@ -290,7 +315,7 @@ static void dinReloadLandscapeOffsets() {
 
 - (CGSize)preferredContentSizeWithPresentationSize:(CGSize)arg1 containerSize:(CGSize)arg2 {
     DINPreferences *prefs = [DINPreferences sharedInstance];
-    if (prefs.enabled && prefs.notificationEnabled) {
+    if (prefs.enabled && prefs.notificationEnabled && !dinIsDeviceLockedOrInCoverSheet()) {
         return CGSizeMake(arg1.width, 80); // Đảm bảo BannerKit cấp đủ chiều cao cho ShimaStyle bung nở
     }
     return %orig;
@@ -305,6 +330,20 @@ static void dinReloadLandscapeOffsets() {
     id request = [self respondsToSelector:@selector(notificationRequest)] ? [self performSelector:@selector(notificationRequest)] : nil;
     if (!request) return;
 
+    // Bỏ qua, trả lại giao diện gốc nếu đang ở Màn hình khóa
+    if (dinIsDeviceLockedOrInCoverSheet()) return;
+
+    // Bỏ qua nếu đang ở Trung tâm thông báo (Notification Center thường đặt Banner trong một UIScrollView)
+    UIView *superview = self.view.superview;
+    BOOL inScrollView = NO;
+    while (superview) {
+        if ([superview isKindOfClass:[UIScrollView class]]) {
+            inScrollView = YES; break;
+        }
+        superview = superview.superview;
+    }
+    if (inScrollView) return;
+
     // Làm tàng hình nền nguyên bản của Apple (Để lại hiệu ứng đổ bóng ảo diệu của riêng ta)
     self.view.backgroundColor = [UIColor clearColor];
     self.view.layer.shadowOpacity = 0;
@@ -313,8 +352,7 @@ static void dinReloadLandscapeOffsets() {
     // Giấu mọi thứ có sẵn bên trong Banner (Tiêu đề gốc, Icon gốc)
     for (UIView *v in self.view.subviews) {
         if (v.tag != 34306) {
-            v.hidden = YES;
-            v.alpha = 0;
+            v.alpha = 0.01; // Giữ alpha 0.01 thay vì hidden = YES để cử chỉ vuốt/chạm vẫn hoạt động 100%
         }
     }
 
@@ -341,6 +379,7 @@ static void dinReloadLandscapeOffsets() {
         containerView.tag = 34306;
         containerView.clipsToBounds = YES;
         containerView.layer.cornerCurve = kCACornerCurveContinuous;
+        containerView.userInteractionEnabled = NO; // Cho phép thao tác chạm đi xuyên qua lớp khung này truyền cho Apple
 
         // Vẽ nền (Background)
         if (prefs.customBackgroundEnabled && prefs.customBackgroundImagePath) {
@@ -362,7 +401,11 @@ static void dinReloadLandscapeOffsets() {
                 }
             }
         } else {
-            containerView.backgroundColor = [UIColor blackColor];
+            // Đổi từ nền Đen đặc sang nền Kính Mờ (Blur) tự động thích ứng với chế độ Sáng/Tối
+            UIBlurEffect *blur = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterial];
+            UIVisualEffectView *blurView = [[UIVisualEffectView alloc] initWithEffect:blur];
+            blurView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+            [containerView addSubview:blurView];
         }
 
         // Lấy tên App
@@ -385,11 +428,31 @@ static void dinReloadLandscapeOffsets() {
 
         // Lấy Icon
         UIImage *icon = nil;
-        if ([content respondsToSelector:@selector(icons)] && [[content performSelector:@selector(icons)] isKindOfClass:[NSArray class]]) {
-            NSArray *icons = [content performSelector:@selector(icons)];
-            if (icons.count > 0) icon = icons.firstObject;
-        } else if ([content respondsToSelector:@selector(icon)]) {
-            icon = [content performSelector:@selector(icon)];
+        
+        // Cố gắng "móc" Icon trực tiếp từ UI nguyên bản của Apple để đạt độ chính xác 100%
+        NSMutableArray *viewsToSearch = [NSMutableArray arrayWithObject:self.view];
+        while (viewsToSearch.count > 0 && !icon) {
+            UIView *v = viewsToSearch.firstObject;
+            [viewsToSearch removeObjectAtIndex:0];
+            if (v.tag == 34306) continue;
+            if ([v isKindOfClass:[UIImageView class]]) {
+                UIImage *img = ((UIImageView *)v).image;
+                if (img && img.size.width >= 15 && img.size.width == img.size.height) {
+                    icon = img;
+                    break;
+                }
+            }
+            [viewsToSearch addObjectsFromArray:v.subviews];
+        }
+        
+        // Nếu không móc được thì mới dùng hàm fallback
+        if (!icon) {
+            if ([content respondsToSelector:@selector(icons)] && [[content performSelector:@selector(icons)] isKindOfClass:[NSArray class]]) {
+                NSArray *icons = [content performSelector:@selector(icons)];
+                if (icons.count > 0) icon = icons.firstObject;
+            } else if ([content respondsToSelector:@selector(icon)]) {
+                icon = [content performSelector:@selector(icon)];
+            }
         }
         if (!icon) icon = dinAppIcon(bundleID);
         if (!icon) icon = dinPlaceholderIcon(appName);
@@ -398,6 +461,7 @@ static void dinReloadLandscapeOffsets() {
         notifView = [[DINNotificationView alloc] initWithTitle:finalTitle message:finalMessage appName:appName icon:icon style:(DINNotificationStyle)prefs.notificationStyle textColorStyle:prefs.textColorStyle];
         notifView.tag = 34307;
         notifView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        notifView.userInteractionEnabled = NO;
         [containerView addSubview:notifView];
 
         [self.view addSubview:containerView];
@@ -439,6 +503,31 @@ static void dinReloadLandscapeOffsets() {
     
     containerView.frame = CGRectMake(centerX, defaultUpwardShift + yOffset, w, h);
     containerView.layer.cornerRadius = h / 2.0;
+}
+
+%end
+
+// ============================================================================
+// MARK: - Test Notification Dispatcher Grabber
+// ============================================================================
+
+static id sharedDispatcher = nil;
+
+%hook NCNotificationDispatcher
+
+- (id)init {
+    sharedDispatcher = %orig;
+    return sharedDispatcher;
+}
+
+- (id)initWithAlertingController:(id)arg1 {
+    sharedDispatcher = %orig;
+    return sharedDispatcher;
+}
+
+- (id)initWithNotificationDestinations:(id)arg1 alertingController:(id)arg2 {
+    sharedDispatcher = %orig;
+    return sharedDispatcher;
 }
 
 %end
@@ -558,7 +647,25 @@ static void *kDINBorderLayerKey = &kDINBorderLayerKey;
     int testToken = 0;
     notify_register_dispatch("com.romlayvn.shimareborn/testNotification",
         &testToken, dispatch_get_main_queue(), ^(int t) {
-            // Nút Thử nghiệm bị Vô hiệu hóa ở chế độ Native Morph. Hãy gửi một tin nhắn thật qua Telegram/Zalo để kiểm tra!
+            if (sharedDispatcher) {
+                @try {
+                    Class mutContentClass = objc_getClass("NCMutableNotificationContent");
+                    id content = [[mutContentClass alloc] init];
+                    if ([content respondsToSelector:@selector(setTitle:)]) [content performSelector:@selector(setTitle:) withObject:@"ShimaReborn"];
+                    if ([content respondsToSelector:@selector(setMessage:)]) [content performSelector:@selector(setMessage:) withObject:@"Thông báo thử nghiệm Native đang hoạt động hoàn hảo!"];
+
+                    Class mutRequestClass = objc_getClass("NCMutableNotificationRequest");
+                    id request = [[mutRequestClass alloc] init];
+                    if ([request respondsToSelector:@selector(setSectionIdentifier:)]) [request performSelector:@selector(setSectionIdentifier:) withObject:@"com.apple.Preferences"];
+                    if ([request respondsToSelector:@selector(setNotificationIdentifier:)]) [request performSelector:@selector(setNotificationIdentifier:) withObject:[[NSUUID UUID] UUIDString]];
+                    if ([request respondsToSelector:@selector(setContent:)]) [request performSelector:@selector(setContent:) withObject:content];
+                    if ([request respondsToSelector:@selector(setTimestamp:)]) [request performSelector:@selector(setTimestamp:) withObject:[NSDate date]];
+
+                    if ([sharedDispatcher respondsToSelector:@selector(postNotificationWithRequest:)]) {
+                        [sharedDispatcher performSelector:@selector(postNotificationWithRequest:) withObject:request];
+                    }
+                } @catch (NSException *e) {}
+            }
         });
 
     %init;
