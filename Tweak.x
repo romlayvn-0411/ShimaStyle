@@ -173,11 +173,12 @@ static BOOL dinShouldShowCustomBanner(id request) {
 // MARK: - App Icon Helper
 // ============================================================================
 
+static NSCache *sAppIconCache = nil;
+static dispatch_once_t onceTokenIcon;
+
 static UIImage *dinAppIcon(NSString *bundleIdentifier) {
     if (!bundleIdentifier) return nil;
 
-    static NSCache *sAppIconCache = nil;
-    static dispatch_once_t onceTokenIcon;
     dispatch_once(&onceTokenIcon, ^{ sAppIconCache = [[NSCache alloc] init]; });
 
     UIImage *cachedIcon = [sAppIconCache objectForKey:bundleIdentifier];
@@ -698,7 +699,10 @@ static void dinReloadLandscapeOffsets() {
         [self.dismissTimer invalidate];
         double duration = [DINPreferences sharedInstance].dismissDuration;
         if (duration < 1.0) duration = 1.0;
-        self.dismissTimer = [NSTimer scheduledTimerWithTimeInterval:duration target:self selector:@selector(dismiss) userInfo:nil repeats:NO];
+        __weak typeof(self) weakSelf = self;
+        self.dismissTimer = [NSTimer scheduledTimerWithTimeInterval:duration repeats:NO block:^(NSTimer * _Nonnull timer) {
+            [weakSelf dismiss];
+        }];
         return;
     }
 
@@ -829,7 +833,7 @@ static void dinReloadLandscapeOffsets() {
     // Spring expand animation - Hiệu ứng "giọt nước rơi" mượt mà, đàn hồi
     [UIView animateWithDuration:animDuration delay:0
          usingSpringWithDamping:0.65 initialSpringVelocity:1.2
-                        options:UIViewAnimationOptionAllowUserInteraction
+                        options:UIViewAnimationOptionAllowUserInteraction | UIViewAnimationOptionBeginFromCurrentState
                      animations:^{
         self.containerView.alpha = 1.0;
         self.containerView.frame = expandedFrame;
@@ -847,8 +851,10 @@ static void dinReloadLandscapeOffsets() {
     // Auto-dismiss after configured duration
     double duration = [DINPreferences sharedInstance].dismissDuration;
     if (duration < 1.0) duration = 1.0;
-    self.dismissTimer = [NSTimer scheduledTimerWithTimeInterval:duration
-        target:self selector:@selector(dismiss) userInfo:nil repeats:NO];
+    __weak typeof(self) weakSelf = self;
+    self.dismissTimer = [NSTimer scheduledTimerWithTimeInterval:duration repeats:NO block:^(NSTimer * _Nonnull timer) {
+        [weakSelf dismiss];
+    }];
 }
 
 - (void)dismiss {
@@ -866,7 +872,7 @@ static void dinReloadLandscapeOffsets() {
     [self.notifView.messageLabel.layer removeAllAnimations];
 
     // 1. Làm mờ phần văn bản/nội dung cực nhanh (chỉ tốn 1/3 thời gian tổng)
-    [UIView animateWithDuration:animDuration * 0.3 delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^{
+    [UIView animateWithDuration:animDuration * 0.3 delay:0 options:UIViewAnimationOptionCurveEaseOut | UIViewAnimationOptionBeginFromCurrentState animations:^{
         self.notifView.alpha = 0;
         self.notifView.transform = CGAffineTransformMakeScale(0.8, 0.8);
     } completion:nil];
@@ -874,7 +880,7 @@ static void dinReloadLandscapeOffsets() {
     // 2. Thu nhỏ khung viền và hoà quyện mờ dần vào DI nguyên bản
     [UIView animateWithDuration:animDuration delay:0
          usingSpringWithDamping:0.75 initialSpringVelocity:0.8
-                        options:UIViewAnimationOptionCurveEaseInOut | UIViewAnimationOptionAllowUserInteraction
+                        options:UIViewAnimationOptionCurveEaseInOut | UIViewAnimationOptionAllowUserInteraction | UIViewAnimationOptionBeginFromCurrentState
                  animations:^{
         self.containerView.frame = pill;
         self.containerView.layer.cornerRadius = pillRadius;
@@ -956,12 +962,35 @@ static void dinReloadLandscapeOffsets() {
         } else if ([content respondsToSelector:@selector(icon)]) {
             icon = [content performSelector:@selector(icon)];
         }
-        if (!icon) icon = dinAppIcon(bundleIdentifier);
+        
+        BOOL requiresAsyncIcon = NO;
+        if (!icon && bundleIdentifier) {
+            dispatch_once(&onceTokenIcon, ^{ sAppIconCache = [[NSCache alloc] init]; });
+            icon = [sAppIconCache objectForKey:bundleIdentifier];
+            if (!icon) requiresAsyncIcon = YES;
+        }
+        
         if (!icon) icon = dinPlaceholderIcon(appName);
         
         [[DINOverlayManager sharedInstance] showWithTitle:finalTitle message:finalMessage
                                                   appName:appName icon:icon
                                          bundleIdentifier:bundleIdentifier];
+                                         
+        // Tải Icon ở luồng nền nếu chưa có trong Cache để chống giật lag
+        if (requiresAsyncIcon) {
+            dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+                UIImage *realIcon = dinAppIcon(bundleIdentifier);
+                if (realIcon) {
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        DINOverlayManager *manager = [DINOverlayManager sharedInstance];
+                        if (manager.showing && [manager.currentBundleIdentifier isEqualToString:bundleIdentifier]) {
+                            manager.notifView.iconImageView.image = realIcon;
+                            [UIView transitionWithView:manager.notifView.iconImageView duration:0.25 options:UIViewAnimationOptionTransitionCrossDissolve animations:nil completion:nil];
+                        }
+                    });
+                }
+            });
+        }
     };
 
     if ([NSThread isMainThread]) {
