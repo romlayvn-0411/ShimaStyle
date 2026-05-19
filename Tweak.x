@@ -5,6 +5,7 @@
 #import <objc/message.h>
 #import <ImageIO/ImageIO.h>
 #import <notify.h>
+#import <sys/utsname.h>
 #import "DINNotificationView.h"
 #import "DINPreferences.h"
 
@@ -390,6 +391,46 @@ static UIView *dinCreateVideoBgView(NSString *path, CGFloat opacity) {
 }
 
 // ============================================================================
+// MARK: - Context-Aware Auto Positioning
+// ============================================================================
+
+static CGFloat dinGetAutoYOffset(void) {
+    struct utsname systemInfo;
+    uname(&systemInfo);
+    NSString *deviceModel = [NSString stringWithCString:systemInfo.machine encoding:NSUTF8StringEncoding];
+    
+    // Mặc định cho các thiết bị không xác định hoặc không có tai thỏ
+    CGFloat defaultY = 11.0;
+    
+    // Nhận diện phần cứng iPhone và tự động khớp trục Y để che hoàn hảo Notch
+    if ([deviceModel hasPrefix:@"iPhone10,3"] || [deviceModel hasPrefix:@"iPhone10,6"] || // iPhone X
+        [deviceModel hasPrefix:@"iPhone11,2"] || [deviceModel hasPrefix:@"iPhone11,4"] || [deviceModel hasPrefix:@"iPhone11,6"]) { // XS, XS Max
+        return -5.0; // Tai thỏ thế hệ 1
+    } 
+    else if ([deviceModel hasPrefix:@"iPhone12,"]) { // iPhone 11 series
+        return -3.0; // Tai thỏ thế hệ 2 (LCD & OLED)
+    } 
+    else if ([deviceModel hasPrefix:@"iPhone13,"]) { // iPhone 12 series
+        return -1.0; // Tai thỏ thế hệ 3 (Viền vuông)
+    } 
+    else if ([deviceModel hasPrefix:@"iPhone14,"]) { // iPhone 13 series & 14 thường
+        if ([deviceModel isEqualToString:@"iPhone14,7"] || [deviceModel isEqualToString:@"iPhone14,8"]) {
+            // iPhone 14 và 14 Plus (dùng Notch của 13)
+            return 2.0;
+        }
+        // iPhone 13 series có tai thỏ hẹp hơn nhưng sâu hơn
+        return 2.0; 
+    } 
+    else if ([deviceModel isEqualToString:@"iPhone15,2"] || [deviceModel isEqualToString:@"iPhone15,3"] || // iPhone 14 Pro/Pro Max
+             [deviceModel hasPrefix:@"iPhone16,"]) { // iPhone 15 series
+        // Thiết bị có sẵn Dynamic Island gốc, giữ toạ độ chuẩn
+        return 11.0;
+    }
+    
+    return defaultY;
+}
+
+// ============================================================================
 // MARK: - Landscape Offset Preferences Cache
 // ============================================================================
 
@@ -529,7 +570,9 @@ static void dinReloadLandscapeOffsets() {
     
     x += xOffset;
     
-    return CGRectMake(x, 11.0 + yOffset, width, height);
+    CGFloat baseY = isLandscape ? 11.0 : dinGetAutoYOffset();
+    
+    return CGRectMake(x, baseY + yOffset, width, height);
 }
 
 - (CGRect)pillFrame {
