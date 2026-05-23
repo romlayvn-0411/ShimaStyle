@@ -1,8 +1,8 @@
 Package: com.34306.shimastyle
 Name: ShimaStyle
-Version: 1.0.7
+Version: 1.0.8
 Architecture: iphoneos-arm
-Description: Force all notifications to Dynamic Island with custom background support. Supports iOS 16-26.
+Description: Force all notifications to Dynamic Island with custom background, advanced animations, color picker, app filtering, haptic feedback, and debug tools. Supports iOS 16-26.
 Maintainer: Little 34306 , romlayvn
 Author: 34306
 Section: Tweaks

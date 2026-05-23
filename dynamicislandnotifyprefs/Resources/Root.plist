@@ -34,7 +34,225 @@
             <string>testNotification</string>
         </dict>
 
-        <!-- BỐ CỤC (LAYOUT) -->
+        <!-- PRESETS (THEME SELECTOR) -->
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>label</key>
+            <string>Preset Themes (Chủ đề)</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSegmentCell</string>
+            <key>default</key>
+            <string>dark</string>
+            <key>defaults</key>
+            <string>com.34306.shimastyle</string>
+            <key>key</key>
+            <string>selectedPreset</string>
+            <key>validValues</key>
+            <array>
+                <string>dark</string>
+                <string>light</string>
+                <string>neon</string>
+                <string>sunset</string>
+                <string>ocean</string>
+                <string>custom</string>
+            </array>
+            <key>validTitles</key>
+            <array>
+                <string>Dark</string>
+                <string>Light</string>
+                <string>Neon</string>
+                <string>Sunset</string>
+                <string>Ocean</string>
+                <string>Custom</string>
+            </array>
+            <key>PostNotification</key>
+            <string>com.34306.shimastyle/prefsChanged</string>
+        </dict>
+
+        <!-- ADVANCED COLORS -->
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>label</key>
+            <string>Màu sắc nâng cao (Advanced Colors)</string>
+            <key>footerText</key>
+            <string>Nhập color hex format: #RRGGBB (vd: #FF0000 cho màu đỏ)</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSEditTextCell</string>
+            <key>defaults</key>
+            <string>com.34306.shimastyle</string>
+            <key>key</key>
+            <string>colorPickerBgColor</string>
+            <key>label</key>
+            <string>Màu nền:</string>
+            <key>placeholder</key>
+            <string>#000000</string>
+            <key>PostNotification</key>
+            <string>com.34306.shimastyle/prefsChanged</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSEditTextCell</string>
+            <key>defaults</key>
+            <string>com.34306.shimastyle</string>
+            <key>key</key>
+            <string>colorPickerTitleColor</string>
+            <key>label</key>
+            <string>Màu tiêu đề:</string>
+            <key>placeholder</key>
+            <string>#FFFFFF</string>
+            <key>PostNotification</key>
+            <string>com.34306.shimastyle/prefsChanged</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSEditTextCell</string>
+            <key>defaults</key>
+            <string>com.34306.shimastyle</string>
+            <key>key</key>
+            <string>colorPickerMessageColor</string>
+            <key>label</key>
+            <string>Màu tin nhắn:</string>
+            <key>placeholder</key>
+            <string>#CCCCCC</string>
+            <key>PostNotification</key>
+            <string>com.34306.shimastyle/prefsChanged</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSEditTextCell</string>
+            <key>defaults</key>
+            <string>com.34306.shimastyle</string>
+            <key>key</key>
+            <string>borderColor</string>
+            <key>label</key>
+            <string>Màu viền:</string>
+            <key>placeholder</key>
+            <string>#333333</string>
+            <key>PostNotification</key>
+            <string>com.34306.shimastyle/prefsChanged</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSwitchCell</string>
+            <key>default</key>
+            <false/>
+            <key>defaults</key>
+            <string>com.34306.shimastyle</string>
+            <key>key</key>
+            <string>gradientEnabled</string>
+            <key>label</key>
+            <string>Bật Gradient nền</string>
+            <key>PostNotification</key>
+            <string>com.34306.shimastyle/prefsChanged</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSegmentCell</string>
+            <key>default</key>
+            <integer>0</integer>
+            <key>defaults</key>
+            <string>com.34306.shimastyle</string>
+            <key>key</key>
+            <string>gradientDirection</string>
+            <key>validValues</key>
+            <array>
+                <integer>0</integer>
+                <integer>1</integer>
+                <integer>2</integer>
+            </array>
+            <key>validTitles</key>
+            <array>
+                <string>Trái → Phải</string>
+                <string>Trên → Dưới</string>
+                <string>Chéo</string>
+            </array>
+            <key>PostNotification</key>
+            <string>com.34306.shimastyle/prefsChanged</string>
+        </dict>
+
+        <!-- ANIMATION ENGINE -->
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>label</key>
+            <string>Hiệu ứng Hoạt ảnh (Animation)</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSStaticTextCell</string>
+            <key>label</key>
+            <string>Kiểu animation bung mở:</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSegmentCell</string>
+            <key>default</key>
+            <integer>0</integer>
+            <key>defaults</key>
+            <string>com.34306.shimastyle</string>
+            <key>key</key>
+            <string>entranceAnimation</string>
+            <key>validValues</key>
+            <array>
+                <integer>0</integer>
+                <integer>1</integer>
+                <integer>2</integer>
+                <integer>3</integer>
+                <integer>4</integer>
+            </array>
+            <key>validTitles</key>
+            <array>
+                <string>Slide</string>
+                <string>Fade</string>
+                <string>Pop</string>
+                <string>Bounce</string>
+                <string>Scale</string>
+            </array>
+            <key>PostNotification</key>
+            <string>com.34306.shimastyle/prefsChanged</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSStaticTextCell</string>
+            <key>label</key>
+            <string>Kiểu animation đóng:</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSegmentCell</string>
+            <key>default</key>
+            <integer>0</integer>
+            <key>defaults</key>
+            <string>com.34306.shimastyle</string>
+            <key>key</key>
+            <string>exitAnimation</string>
+            <key>validValues</key>
+            <array>
+                <integer>0</integer>
+                <integer>1</integer>
+                <integer>2</integer>
+                <integer>3</integer>
+                <integer>4</integer>
+            </array>
+            <key>validTitles</key>
+            <array>
+                <string>Slide</string>
+                <string>Fade</string>
+                <string>Pop</string>
+                <string>Bounce</string>
+                <string>Scale</string>
+            </array>
+            <key>PostNotification</key>
+            <string>com.34306.shimastyle/prefsChanged</string>
+        </dict>
+
+        <!-- HIỂN THỊ & GIAO DIỆN (LAYOUT) -->
         <dict>
             <key>cell</key>
             <string>PSGroupCell</string>
@@ -82,6 +300,52 @@
             <array> <integer>0</integer> <integer>1</integer> <integer>2</integer> </array>
             <key>validTitles</key>
             <array> <string>Chữ tự động</string> <string>Chữ sáng</string> <string>Chữ tối</string> </array>
+            <key>PostNotification</key>
+            <string>com.34306.shimastyle/prefsChanged</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSStaticTextCell</string>
+            <key>label</key>
+            <string>Kích thước icon:</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSegmentCell</string>
+            <key>default</key>
+            <integer>1</integer>
+            <key>defaults</key>
+            <string>com.34306.shimastyle</string>
+            <key>key</key>
+            <string>iconSize</string>
+            <key>validValues</key>
+            <array> <integer>0</integer> <integer>1</integer> <integer>2</integer> </array>
+            <key>validTitles</key>
+            <array> <string>Nhỏ</string> <string>Vừa</string> <string>Lớn</string> </array>
+            <key>PostNotification</key>
+            <string>com.34306.shimastyle/prefsChanged</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSStaticTextCell</string>
+            <key>label</key>
+            <string>Bán kính góc (0-40):</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSliderCell</string>
+            <key>default</key>
+            <real>20.0</real>
+            <key>defaults</key>
+            <string>com.34306.shimastyle</string>
+            <key>key</key>
+            <string>cornerRadiusValue</string>
+            <key>min</key>
+            <real>0.0</real>
+            <key>max</key>
+            <real>40.0</real>
+            <key>showValue</key>
+            <true/>
             <key>PostNotification</key>
             <string>com.34306.shimastyle/prefsChanged</string>
         </dict>
@@ -224,6 +488,100 @@
             <string>com.34306.shimastyle/prefsChanged</string>
         </dict>
 
+        <!-- APP FILTERING -->
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>label</key>
+            <string>Lọc ứng dụng (App Filtering)</string>
+            <key>footerText</key>
+            <string>Chọn chế độ: Không lọc, Chỉ hiển thị app trong danh sách (Whitelist), hoặc Ẩn app trong danh sách (Blacklist)</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSegmentCell</string>
+            <key>default</key>
+            <integer>0</integer>
+            <key>defaults</key>
+            <string>com.34306.shimastyle</string>
+            <key>key</key>
+            <string>filteringMode</string>
+            <key>validValues</key>
+            <array> <integer>0</integer> <integer>1</integer> <integer>2</integer> </array>
+            <key>validTitles</key>
+            <array> <string>Không lọc</string> <string>Whitelist</string> <string>Blacklist</string> </array>
+            <key>PostNotification</key>
+            <string>com.34306.shimastyle/prefsChanged</string>
+        </dict>
+
+        <!-- ÂM THANH & HAPTIC -->
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>label</key>
+            <string>Âm thanh &amp; Haptic</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSwitchCell</string>
+            <key>default</key>
+            <true/>
+            <key>defaults</key>
+            <string>com.34306.shimastyle</string>
+            <key>key</key>
+            <string>hapticEnabled</string>
+            <key>label</key>
+            <string>Bật Haptic Feedback</string>
+            <key>PostNotification</key>
+            <string>com.34306.shimastyle/prefsChanged</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSegmentCell</string>
+            <key>default</key>
+            <integer>1</integer>
+            <key>defaults</key>
+            <string>com.34306.shimastyle</string>
+            <key>key</key>
+            <string>hapticType</string>
+            <key>validValues</key>
+            <array> <integer>0</integer> <integer>1</integer> <integer>2</integer> <integer>3</integer> </array>
+            <key>validTitles</key>
+            <array> <string>Tap</string> <string>Light Impact</string> <string>Medium Impact</string> <string>Heavy Impact</string> </array>
+            <key>PostNotification</key>
+            <string>com.34306.shimastyle/prefsChanged</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSwitchCell</string>
+            <key>default</key>
+            <false/>
+            <key>defaults</key>
+            <string>com.34306.shimastyle</string>
+            <key>key</key>
+            <string>soundEnabled</string>
+            <key>label</key>
+            <string>Bật Âm thanh thông báo</string>
+            <key>PostNotification</key>
+            <string>com.34306.shimastyle/prefsChanged</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSegmentCell</string>
+            <key>default</key>
+            <integer>0</integer>
+            <key>defaults</key>
+            <string>com.34306.shimastyle</string>
+            <key>key</key>
+            <string>soundType</string>
+            <key>validValues</key>
+            <array> <integer>0</integer> <integer>1</integer> <integer>2</integer> </array>
+            <key>validTitles</key>
+            <array> <string>Standard</string> <string>Alert</string> <string>Success</string> </array>
+            <key>PostNotification</key>
+            <string>com.34306.shimastyle/prefsChanged</string>
+        </dict>
+
         <!-- NỀN (BACKGROUND) -->
         <dict>
             <key>cell</key>
@@ -308,6 +666,56 @@
             <string>com.34306.shimastyle/prefsChanged</string>
         </dict>
 
+        <!-- DEBUG TOOLS -->
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>label</key>
+            <string>Debug Tools</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSwitchCell</string>
+            <key>default</key>
+            <false/>
+            <key>defaults</key>
+            <string>com.34306.shimastyle</string>
+            <key>key</key>
+            <string>debugEnabled</string>
+            <key>label</key>
+            <string>Bật Debug Mode</string>
+            <key>PostNotification</key>
+            <string>com.34306.shimastyle/prefsChanged</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSwitchCell</string>
+            <key>default</key>
+            <false/>
+            <key>defaults</key>
+            <string>com.34306.shimastyle</string>
+            <key>key</key>
+            <string>showNotificationQueue</string>
+            <key>label</key>
+            <string>Hiển thị Notification Queue</string>
+            <key>PostNotification</key>
+            <string>com.34306.shimastyle/prefsChanged</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSwitchCell</string>
+            <key>default</key>
+            <false/>
+            <key>defaults</key>
+            <string>com.34306.shimastyle</string>
+            <key>key</key>
+            <string>showPerformanceMetrics</string>
+            <key>label</key>
+            <string>Hiển thị Performance Metrics</string>
+            <key>PostNotification</key>
+            <string>com.34306.shimastyle/prefsChanged</string>
+        </dict>
+
         <!-- HỆ THỐNG -->
         <dict>
             <key>cell</key>
@@ -331,8 +739,8 @@
             <key>cell</key>
             <string>PSGroupCell</string>
             <key>footerText</key>
-            <string>ShimaStyle v1.0.4
-Remake by Romlayvn - Hỗ trợ iOS 16.</string>
+            <string>ShimaStyle v1.0.8
+Remake by Romlayvn - Hỗ trợ iOS 16+.</string>
             <key>footerAlignment</key>
             <integer>1</integer>
         </dict>

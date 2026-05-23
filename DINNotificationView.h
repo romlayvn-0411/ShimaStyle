@@ -19,4 +19,12 @@ typedef NS_ENUM(NSInteger, DINNotificationStyle) {
                         style:(DINNotificationStyle)style
                textColorStyle:(NSInteger)textColorStyle;
 - (void)startMarquee;
++ (CAAnimation *)createAnimationForType:(NSInteger)animationType duration:(NSTimeInterval)duration;
++ (UIColor *)colorFromHex:(NSString *)hexString;
+- (CAGradientLayer *)createGradientLayerWithStartColor:(UIColor *)startColor
+                                              endColor:(UIColor *)endColor
+                                             direction:(NSInteger)direction
+                                                 frame:(CGRect)frame;
+- (void)playHapticFeedbackWithType:(NSInteger)hapticType;
+- (void)playSoundEffectWithType:(NSInteger)soundType;
 @end

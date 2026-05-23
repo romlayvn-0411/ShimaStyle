@@ -151,22 +151,42 @@ static UIInterfaceOrientation dinGetActiveOrientation(void) {
 }
 
 // ============================================================================
+// MARK: - App Filtering Helper
+// ============================================================================
+
+static BOOL dinIsAppInFilterList(NSString *bundleIdentifier, NSArray *appList) {
+    if (!bundleIdentifier || !appList || appList.count == 0) return NO;
+    return [appList containsObject:bundleIdentifier];
+}
+
+// ============================================================================
 // MARK: - Bộ Lọc Hiển Thị Thông Minh (Smart Banner Filter)
 // ============================================================================
 
 static BOOL dinShouldShowCustomBanner(id request) {
     DINPreferences *prefs = [DINPreferences sharedInstance];
     if (!prefs.enabled || !prefs.notificationEnabled) return NO;
-    
+
     if (dinIsDeviceLockedOrInCoverSheet()) return NO; // Đang ở Màn hình khóa -> Nhường hệ thống
 
     NSString *bundleIdentifier = [request respondsToSelector:@selector(sectionIdentifier)] ? [request sectionIdentifier] : nil;
     NSString *activeApp = dinActiveAppBundleID();
-    
+
     if (bundleIdentifier && [bundleIdentifier isEqualToString:activeApp]) {
         return NO; // Nhận tin nhắn từ app đang mở -> Nhường app tự hiện thông báo trong
     }
-    
+
+    // App Filtering Logic
+    if (bundleIdentifier) {
+        NSInteger filteringMode = prefs.filteringMode;
+
+        if (filteringMode == 1) { // Whitelist mode
+            return dinIsAppInFilterList(bundleIdentifier, prefs.whitelistedApps);
+        } else if (filteringMode == 2) { // Blacklist mode
+            return !dinIsAppInFilterList(bundleIdentifier, prefs.blacklistedApps);
+        }
+    }
+
     return YES;
 }
 
@@ -753,8 +773,7 @@ static void dinReloadLandscapeOffsets() {
     self.currentBundleIdentifier = bundleIdentifier;
     [self ensureWindow];
 
-    // Ép Window cập nhật hướng xoay ngay lập tức khớp với Game
-    [self.window.rootViewController setNeedsUpdateOfSupportedInterfaceOrientations];
+    // [self.window.rootViewController setNeedsUpdateOfSupportedInterfaceOrientations];
 
     [self.dismissTimer invalidate];
     self.dismissTimer = nil;

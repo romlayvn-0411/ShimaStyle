@@ -1,4 +1,5 @@
 #import "DINNotificationView.h"
+#import <AudioToolbox/AudioToolbox.h>
 
 @implementation DINNotificationView
 
@@ -282,4 +283,149 @@
     }
 }
 
+#pragma mark - Animation Engine
+
++ (CAAnimation *)createAnimationForType:(NSInteger)animationType duration:(NSTimeInterval)duration {
+    switch (animationType) {
+        case 0: // Slide
+            {
+                CABasicAnimation *slideAnim = [CABasicAnimation animationWithKeyPath:@"position.y"];
+                slideAnim.fromValue = @(-100);
+                slideAnim.toValue = @(0);
+                slideAnim.duration = duration;
+                slideAnim.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseOut];
+                return slideAnim;
+            }
+        case 1: // Fade
+            {
+                CABasicAnimation *fadeAnim = [CABasicAnimation animationWithKeyPath:@"opacity"];
+                fadeAnim.fromValue = @(0);
+                fadeAnim.toValue = @(1);
+                fadeAnim.duration = duration;
+                fadeAnim.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseIn];
+                return fadeAnim;
+            }
+        case 2: // Pop (overshoot effect)
+            {
+                CAKeyframeAnimation *popAnim = [CAKeyframeAnimation animationWithKeyPath:@"transform.scale"];
+                popAnim.values = @[@(0), @(1.2), @(1.0)];
+                popAnim.keyTimes = @[@(0), @(0.6), @(1)];
+                popAnim.duration = duration;
+                popAnim.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseOut];
+                return popAnim;
+            }
+        case 3: // Bounce (spring-like)
+            {
+                CABasicAnimation *bounceAnim = [CABasicAnimation animationWithKeyPath:@"transform.scale"];
+                bounceAnim.fromValue = @(0.5);
+                bounceAnim.toValue = @(1.0);
+                bounceAnim.duration = duration;
+                CAMediaTimingFunction *timing = [CAMediaTimingFunction functionWithControlPoints:0.34 :1.56 :0.64 :1];
+                bounceAnim.timingFunction = timing;
+                return bounceAnim;
+            }
+        case 4: // Scale
+            {
+                CABasicAnimation *scaleAnim = [CABasicAnimation animationWithKeyPath:@"transform.scale"];
+                scaleAnim.fromValue = @(0.5);
+                scaleAnim.toValue = @(1.0);
+                scaleAnim.duration = duration;
+                scaleAnim.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseOut];
+                return scaleAnim;
+            }
+        default:
+            return nil;
+    }
+}
+
+#pragma mark - Color Helper
+
++ (UIColor *)colorFromHex:(NSString *)hexString {
+    if (!hexString || hexString.length < 7) return [UIColor blackColor];
+
+    NSString *hex = [hexString stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"#"]];
+    if (hex.length != 6) return [UIColor blackColor];
+
+    unsigned int rgbValue = 0;
+    NSScanner *scanner = [NSScanner scannerWithString:hex];
+    [scanner scanHexInt:&rgbValue];
+
+    return [UIColor colorWithRed:((rgbValue >> 16) & 0xFF) / 255.0
+                          green:((rgbValue >> 8) & 0xFF) / 255.0
+                           blue:(rgbValue & 0xFF) / 255.0
+                          alpha:1.0];
+}
+
+#pragma mark - Gradient Background
+
+- (CAGradientLayer *)createGradientLayerWithStartColor:(UIColor *)startColor
+                                              endColor:(UIColor *)endColor
+                                             direction:(NSInteger)direction
+                                                 frame:(CGRect)frame {
+    CAGradientLayer *gradientLayer = [CAGradientLayer layer];
+    gradientLayer.frame = frame;
+    gradientLayer.colors = @[(id)startColor.CGColor, (id)endColor.CGColor];
+
+    switch (direction) {
+        case 0: // Left to Right
+            gradientLayer.startPoint = CGPointMake(0.0, 0.5);
+            gradientLayer.endPoint = CGPointMake(1.0, 0.5);
+            break;
+        case 1: // Top to Bottom
+            gradientLayer.startPoint = CGPointMake(0.5, 0.0);
+            gradientLayer.endPoint = CGPointMake(0.5, 1.0);
+            break;
+        case 2: // Diagonal
+            gradientLayer.startPoint = CGPointMake(0.0, 0.0);
+            gradientLayer.endPoint = CGPointMake(1.0, 1.0);
+            break;
+        default:
+            break;
+    }
+
+    return gradientLayer;
+}
+
+#pragma mark - Haptic Feedback
+
+- (void)playHapticFeedbackWithType:(NSInteger)hapticType {
+    if (@available(iOS 10.0, *)) {
+        UIImpactFeedbackGenerator *hapticGenerator;
+
+        switch (hapticType) {
+            case 0: // Tap (Light)
+                hapticGenerator = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleLight];
+                break;
+            case 1: // Light Impact
+                hapticGenerator = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleLight];
+                break;
+            case 2: // Medium Impact
+                hapticGenerator = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleMedium];
+                break;
+            case 3: // Heavy Impact
+                hapticGenerator = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleHeavy];
+                break;
+            default:
+                return;
+        }
+
+        [hapticGenerator impactOccurred];
+    }
+}
+
+#pragma mark - Sound Effects
+
+- (void)playSoundEffectWithType:(NSInteger)soundType {
+    AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
+
+    if (soundType == 0) {
+        AudioServicesPlaySystemSound(1000); // Standard notification
+    } else if (soundType == 1) {
+        AudioServicesPlaySystemSound(1001); // Alert sound
+    } else if (soundType == 2) {
+        AudioServicesPlaySystemSound(1002); // Success sound
+    }
+}
+
 @end
+
