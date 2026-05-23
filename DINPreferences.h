@@ -5,7 +5,6 @@
 
 // Existing properties
 @property (nonatomic, assign) BOOL enabled;
-@property (nonatomic, assign) BOOL notificationEnabled;
 @property (nonatomic, assign) BOOL customBackgroundEnabled;
 @property (nonatomic, copy) NSString *customBackgroundImagePath;
 @property (nonatomic, assign) CGFloat backgroundOpacity;
@@ -36,6 +35,8 @@
 @property (nonatomic, assign) CGFloat maxNotificationWidth;
 @property (nonatomic, assign) CGFloat maxNotificationHeight;
 @property (nonatomic, assign) NSInteger safeAreaAdjustment;
+@property (nonatomic, assign) CGFloat landscapeXOffset;
+@property (nonatomic, assign) CGFloat landscapeYOffset;
 
 // App Filtering
 @property (nonatomic, assign) NSInteger filteringMode;

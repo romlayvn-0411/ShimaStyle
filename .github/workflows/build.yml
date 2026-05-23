@@ -43,19 +43,33 @@ jobs:
           else
             FILE="control"
             [ ! -f "control" ] && FILE="control.yaml"
-            BASE_VERSION=$(awk '/^Version:/ {print $2}' $FILE | sed 's/-.*//')
+            BASE_VERSION=$(awk '/^Version:/ {print $2}' "$FILE" | sed 's/-.*//')
             VERSION="${BASE_VERSION}"
           fi
           echo "Updating version to $VERSION"
           echo "pkg_version=$VERSION" >> $GITHUB_OUTPUT
           if [ -f "control" ]; then
-            sed -i '' "s/^Version:.*/Version: $VERSION/" control
+            sed -i.bak "s/^Version:.*/Version: $VERSION/" control
+            rm -f control.bak
           elif [ -f "control.yaml" ]; then
-            sed -i '' "s/^Version:.*/Version: $VERSION/" control.yaml
+            sed -i.bak "s/^Version:.*/Version: $VERSION/" control.yaml
+            rm -f control.yaml.bak
           fi
 
       - name: Build Tweak (Make Package)
-        run: make package FINALPACKAGE=1
+        run: |
+          export THEOS_PACKAGE_SCHEME=rootless
+          make package FINALPACKAGE=1 2>&1 | tee build.log
+          # Verify build output exists
+          if [ $(find packages -name "*.deb" -type f 2>/dev/null | wc -l) -gt 0 ]; then
+            echo "✓ Build successful - $(ls -1 packages/*.deb | wc -l) .deb file(s) generated:"
+            ls -lh packages/*.deb
+          else
+            echo "❌ Build failed - No .deb files found"
+            echo "Build log:"
+            cat build.log | tail -100
+            exit 1
+          fi
 
       - name: Generate Release Notes
         id: release_notes
@@ -67,13 +81,22 @@ jobs:
           echo "" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ShimaStyle-${{ steps.version.outputs.pkg_version }}-build
+          path: packages/
+          retention-days: 30
+
       - name: Delete Existing Release (Tránh trùng lặp Tag)
+        if: startsWith(github.ref, 'refs/tags/')
         run: |
           gh release delete v${{ steps.version.outputs.pkg_version }} --cleanup-tag -y || true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.pkg_version }}
@@ -86,6 +109,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Delete Older Releases (Giữ 2 bản mới nhất)
+        if: startsWith(github.ref, 'refs/tags/')
         uses: dev-drprasad/delete-older-releases@v0.3.3
         with:
           keep_latest: 2

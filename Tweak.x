@@ -165,7 +165,7 @@ static BOOL dinIsAppInFilterList(NSString *bundleIdentifier, NSArray *appList) {
 
 static BOOL dinShouldShowCustomBanner(id request) {
     DINPreferences *prefs = [DINPreferences sharedInstance];
-    if (!prefs.enabled || !prefs.notificationEnabled) return NO;
+    if (!prefs.enabled) return NO;
 
     if (dinIsDeviceLockedOrInCoverSheet()) return NO; // Đang ở Màn hình khóa -> Nhường hệ thống
 
@@ -458,12 +458,9 @@ static CGFloat sLandscapeXOffset = 0.0;
 static CGFloat sLandscapeYOffset = 0.0;
 
 static void dinReloadLandscapeOffsets() {
-    CFPreferencesAppSynchronize((CFStringRef)@"com.34306.shimastyle");
-    NSNumber *xVal = (NSNumber *)CFBridgingRelease(CFPreferencesCopyAppValue((CFStringRef)@"landscapeXOffset", (CFStringRef)@"com.34306.shimastyle"));
-    sLandscapeXOffset = xVal ? [xVal floatValue] : 0.0;
-    
-    NSNumber *yVal = (NSNumber *)CFBridgingRelease(CFPreferencesCopyAppValue((CFStringRef)@"landscapeYOffset", (CFStringRef)@"com.34306.shimastyle"));
-    sLandscapeYOffset = yVal ? [yVal floatValue] : 0.0;
+    DINPreferences *prefs = [DINPreferences sharedInstance];
+    sLandscapeXOffset = prefs.landscapeXOffset;
+    sLandscapeYOffset = prefs.landscapeYOffset;
 }
 
 // ============================================================================

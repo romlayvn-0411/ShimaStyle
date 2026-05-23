@@ -30,7 +30,6 @@ static NSString *const kPrefsDomain = @"com.34306.shimastyle";
 
     // Existing preferences
     _enabled = prefs[@"enabled"] ? [prefs[@"enabled"] boolValue] : YES;
-    _notificationEnabled = YES;
     _customBackgroundEnabled = prefs[@"customBackgroundEnabled"] ? [prefs[@"customBackgroundEnabled"] boolValue] : NO;
 
     NSString *bgPath = prefs[@"customBackgroundImagePath"];
@@ -64,6 +63,8 @@ static NSString *const kPrefsDomain = @"com.34306.shimastyle";
     _maxNotificationWidth = prefs[@"maxNotificationWidth"] ? [prefs[@"maxNotificationWidth"] floatValue] : 300.0;
     _maxNotificationHeight = prefs[@"maxNotificationHeight"] ? [prefs[@"maxNotificationHeight"] floatValue] : 120.0;
     _safeAreaAdjustment = prefs[@"safeAreaAdjustment"] ? [prefs[@"safeAreaAdjustment"] integerValue] : 0;
+    _landscapeXOffset = prefs[@"landscapeXOffset"] ? [prefs[@"landscapeXOffset"] floatValue] : 0.0;
+    _landscapeYOffset = prefs[@"landscapeYOffset"] ? [prefs[@"landscapeYOffset"] floatValue] : 0.0;
 
     // App Filtering
     _filteringMode = prefs[@"filteringMode"] ? [prefs[@"filteringMode"] integerValue] : 0;
